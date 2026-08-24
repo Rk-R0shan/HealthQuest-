@@ -18,19 +18,19 @@ export const SKIN_COLORS: Record<string, string> = {
 };
 
 export const HAIR_COLORS: Record<string, string> = {
-  black: '#1A1A1A',
-  brown: '#4A2E1B',
-  blonde: '#E6C229',
-  red: '#C53030',
-  purple: '#805AD5',
+  black: '#1E293B',
+  brown: '#5D4037',
+  blonde: '#F59E0B',
+  red: '#DC2626',
+  purple: '#7C3AED',
 };
 
 export const CLOTHING_COLORS: Record<string, string> = {
-  red: '#E53E3E',
-  blue: '#3182CE',
-  green: '#38A169',
-  yellow: '#D69E2E',
-  pink: '#D53F8C',
+  red: '#EF4444',
+  blue: '#3B82F6',
+  green: '#10B981',
+  yellow: '#F59E0B',
+  pink: '#EC4899',
 };
 
 export const Avatar: React.FC<AvatarProps> = ({ config, size = 100, style }) => {
@@ -44,177 +44,165 @@ export const Avatar: React.FC<AvatarProps> = ({ config, size = 100, style }) => 
         {/* 1. Background / Base Shadow */}
         <Circle cx="50" cy="50" r="48" fill="#F8FAFC" stroke="#E2E8F0" strokeWidth="2" />
 
-        {/* 2. Body / Clothing Layer */}
+        {/* 2. Back Hair Layer (falls behind shoulders & neck) */}
+        {config.hairStyle === 'long' && (
+          <G fill={hairColor} stroke="#0F172A" strokeWidth="3">
+            {/* Left Twin Tail */}
+            <Path d="M 24 44 C 12 55 14 78 20 86 C 26 86 28 78 28 66 Z" />
+            {/* Right Twin Tail */}
+            <Path d="M 76 44 C 88 55 86 78 80 86 C 74 86 72 78 72 66 Z" />
+          </G>
+        )}
+
+        {/* 3. Neck & Body / Shirt Layer */}
+        <Rect x="44" y="62" width="12" height="15" fill={skin} stroke="#0F172A" strokeWidth="3" />
+        
         <Path
-          d="M 20 90 Q 50 65 80 90 Z"
+          d="M 18 92 Q 50 68 82 92 Z"
           fill={clothes}
           stroke="#0F172A"
           strokeWidth="3"
         />
-        {/* Shirt Collar / Neck Detail */}
+        {/* Shirt Collar / Neck Trim */}
         <Path
-          d="M 40 76 Q 50 85 60 76"
+          d="M 38 77 Q 50 86 62 77"
           fill="none"
           stroke="#0F172A"
           strokeWidth="3"
         />
 
-        {/* 3. Neck */}
-        <Rect x="45" y="65" width="10" height="12" fill={skin} stroke="#0F172A" strokeWidth="3" />
+        {/* 4. Head & Ears Base */}
+        <Circle cx="50" cy="46" r="23" fill={skin} stroke="#0F172A" strokeWidth="3" />
+        {/* Left & Right Ears */}
+        <Circle cx="26" cy="46" r="4.5" fill={skin} stroke="#0F172A" strokeWidth="3" />
+        <Circle cx="74" cy="46" r="4.5" fill={skin} stroke="#0F172A" strokeWidth="3" />
 
-        {/* 4. Head / Face */}
-        <Circle cx="50" cy="45" r="24" fill={skin} stroke="#0F172A" strokeWidth="3" />
-        
-        {/* Ears */}
-        <Circle cx="24" cy="45" r="5" fill={skin} stroke="#0F172A" strokeWidth="3" />
-        <Circle cx="76" cy="45" r="5" fill={skin} stroke="#0F172A" strokeWidth="3" />
+        {/* 5. Rosy Cheeks (Cute Mascot Touch) */}
+        <Circle cx="35" cy="50" r="3.5" fill="#FF8A80" opacity={0.4} />
+        <Circle cx="65" cy="50" r="3.5" fill="#FF8A80" opacity={0.4} />
 
-        {/* 5. Hair Layer */}
+        {/* 6. Front Hair Sets (Properly positioned & aligned) */}
         {config.hairStyle === 'short' && (
-          <G>
-            <Path
-              d="M 26 40 Q 50 12 74 40 Q 70 30 60 28 Q 50 32 40 28 Q 30 30 26 40 Z"
-              fill={hairColor}
-              stroke="#0F172A"
-              strokeWidth="3"
-            />
+          <G fill={hairColor} stroke="#0F172A" strokeWidth="3">
+            <Path d="M 26 44 C 23 23 32 14 50 14 C 68 14 77 23 74 44 C 72 38 67 33 60 35 C 54 37 50 31 44 33 C 38 35 32 31 26 44 Z" />
           </G>
         )}
 
         {config.hairStyle === 'spiky' && (
-          <G>
-            <Path
-              d="M 26 40 L 28 26 L 36 18 L 44 26 L 50 14 L 56 26 L 64 18 L 72 26 L 74 40 Q 60 28 50 32 Q 40 28 26 40 Z"
-              fill={hairColor}
-              stroke="#0F172A"
-              strokeWidth="3"
-            />
-          </G>
-        )}
-
-        {config.hairStyle === 'long' && (
-          <G>
-            {/* Back Hair Strands */}
-            <Path
-              d="M 26 45 Q 16 55 22 75 Q 26 76 30 70 L 26 45 Z"
-              fill={hairColor}
-              stroke="#0F172A"
-              strokeWidth="3"
-            />
-            <Path
-              d="M 74 45 Q 84 55 78 75 Q 74 76 70 70 L 74 45 Z"
-              fill={hairColor}
-              stroke="#0F172A"
-              strokeWidth="3"
-            />
-            {/* Top/Front Hair */}
-            <Path
-              d="M 26 40 Q 50 15 74 40 Q 50 25 26 40 Z"
-              fill={hairColor}
-              stroke="#0F172A"
-              strokeWidth="3"
-            />
+          <G fill={hairColor} stroke="#0F172A" strokeWidth="3">
+            <Path d="M 26 43 L 23 28 L 31 18 L 38 25 L 50 10 L 62 25 L 69 18 L 77 28 L 74 43 C 71 36 65 33 58 35 C 52 37 48 31 42 34 C 36 36 29 33 26 43 Z" />
           </G>
         )}
 
         {config.hairStyle === 'curly' && (
           <G fill={hairColor} stroke="#0F172A" strokeWidth="3">
-            {/* Overlapping puffs */}
-            <Circle cx="30" cy="28" r="8" />
-            <Circle cx="42" cy="20" r="9" />
-            <Circle cx="58" cy="20" r="9" />
-            <Circle cx="70" cy="28" r="8" />
-            <Circle cx="24" cy="38" r="7" />
-            <Circle cx="76" cy="38" r="7" />
-            {/* Hide inner overlaps */}
-            <Path d="M 26 40 Q 50 22 74 40 Z" fill={hairColor} stroke="none" />
-            <Path d="M 26 40 Q 50 22 74 40" fill="none" stroke="#0F172A" strokeWidth="3" />
+            {/* Fluffy cloud puffs framing head */}
+            <Circle cx="26" cy="38" r="7.5" />
+            <Circle cx="29" cy="26" r="8.5" />
+            <Circle cx="40" cy="16" r="9" />
+            <Circle cx="50" cy="14" r="9.5" />
+            <Circle cx="60" cy="16" r="9" />
+            <Circle cx="71" cy="26" r="8.5" />
+            <Circle cx="74" cy="38" r="7.5" />
+            {/* Smooth base filling gap over head */}
+            <Path d="M 26 40 C 26 22 34 16 50 16 C 66 16 74 22 74 40 C 70 34 64 32 58 34 C 52 36 48 31 42 33 C 36 35 30 33 26 40 Z" fill={hairColor} stroke="none" />
+            <Path d="M 26 40 C 30 33 36 35 42 33 C 48 31 52 36 58 34 C 64 32 70 34 74 40" fill="none" stroke="#0F172A" strokeWidth="3" />
           </G>
         )}
 
-        {/* 6. Eyes & Expression */}
+        {config.hairStyle === 'long' && (
+          <G fill={hairColor} stroke="#0F172A" strokeWidth="3">
+            {/* Front Bangs & Crown */}
+            <Path d="M 26 44 C 23 23 33 14 50 14 C 67 14 77 23 74 44 C 72 37 66 33 59 35 C 50 37 45 32 39 34 C 33 36 28 35 26 44 Z" />
+            {/* Hair Ties */}
+            <Circle cx="21" cy="54" r="3" fill="#EF4444" stroke="#0F172A" strokeWidth="2" />
+            <Circle cx="79" cy="54" r="3" fill="#EF4444" stroke="#0F172A" strokeWidth="2" />
+          </G>
+        )}
+
+        {/* 7. Eyes & Expression */}
         {config.expression === 'happy' && (
           <G stroke="#0F172A" strokeWidth="3" fill="none">
             {/* Happy Closed Arcs */}
-            <Path d="M 38 42 Q 43 38 46 42" />
-            <Path d="M 54 42 Q 57 38 62 42" />
-            {/* Cheerful Open Mouth */}
-            <Path d="M 42 53 Q 50 63 58 53 Z" fill="#E53E3E" />
+            <Path d="M 38 43 Q 43 38 46 43" />
+            <Path d="M 54 43 Q 57 38 62 43" />
+            {/* Cheerful Open Smile */}
+            <Path d="M 43 53 Q 50 63 57 53 Z" fill="#EF4444" />
           </G>
         )}
 
         {config.expression === 'smile' && (
           <G stroke="#0F172A" strokeWidth="3" fill="none">
-            {/* Simple dot eyes */}
-            <Circle cx="42" cy="43" r="2" fill="#0F172A" />
-            <Circle cx="58" cy="43" r="2" fill="#0F172A" />
-            {/* Simple Smile Curve */}
-            <Path d="M 44 54 Q 50 60 56 54" />
+            {/* Dot eyes */}
+            <Circle cx="42" cy="44" r="2.5" fill="#0F172A" />
+            <Circle cx="58" cy="44" r="2.5" fill="#0F172A" />
+            {/* Smile curve */}
+            <Path d="M 44 54 Q 50 61 56 54" />
           </G>
         )}
 
         {config.expression === 'determined' && (
           <G stroke="#0F172A" strokeWidth="3" fill="none">
-            {/* Determined eyebrows */}
-            <Path d="M 38 37 L 46 40" />
-            <Path d="M 54 40 L 62 37" />
-            {/* Focus Eyes */}
-            <Circle cx="42" cy="44" r="2" fill="#0F172A" />
-            <Circle cx="58" cy="44" r="2" fill="#0F172A" />
-            {/* Straight Mouth Line */}
+            {/* Hero Eyebrows */}
+            <Path d="M 37 39 L 45 42" strokeWidth="2.5" />
+            <Path d="M 55 42 L 63 39" strokeWidth="2.5" />
+            {/* Confident Eyes */}
+            <Circle cx="42" cy="45" r="2.5" fill="#0F172A" />
+            <Circle cx="58" cy="45" r="2.5" fill="#0F172A" />
+            {/* Determined smirk */}
             <Path d="M 44 55 L 56 55" />
           </G>
         )}
 
         {config.expression === 'surprised' && (
           <G stroke="#0F172A" strokeWidth="3" fill="none">
-            {/* Wide Round Eyes */}
+            {/* Round Eyes */}
             <Circle cx="42" cy="43" r="3.5" fill="none" />
             <Circle cx="42" cy="43" r="1.5" fill="#0F172A" />
             <Circle cx="58" cy="43" r="3.5" fill="none" />
             <Circle cx="58" cy="43" r="1.5" fill="#0F172A" />
-            {/* O-shaped Mouth */}
-            <Circle cx="50" cy="55" r="4" fill="#E53E3E" />
+            {/* O-Mouth */}
+            <Circle cx="50" cy="55" r="4" fill="#EF4444" />
           </G>
         )}
 
-        {/* 7. Accessories */}
+        {/* 8. Accessories Layer */}
         {config.accessory === 'glasses' && (
           <G stroke="#0F172A" strokeWidth="3.5" fill="none">
-            {/* Left lens */}
-            <Circle cx="41" cy="43" r="8" stroke="#3182CE" />
-            {/* Right lens */}
-            <Circle cx="59" cy="43" r="8" stroke="#3182CE" />
+            {/* Left Lens */}
+            <Circle cx="41" cy="44" r="8" stroke="#3B82F6" />
+            {/* Right Lens */}
+            <Circle cx="59" cy="44" r="8" stroke="#3B82F6" />
             {/* Bridge */}
-            <Path d="M 49 43 L 51 43" />
-            {/* Sides */}
-            <Path d="M 24 43 L 33 43" />
-            <Path d="M 67 43 L 76 43" />
+            <Path d="M 49 44 L 51 44" />
+            {/* Frames to ears */}
+            <Path d="M 25 44 L 33 44" />
+            <Path d="M 67 44 L 75 44" />
           </G>
         )}
 
         {config.accessory === 'crown' && (
           <G>
             <Path
-              d="M 36 22 L 32 10 L 42 16 L 50 6 L 58 16 L 68 10 L 64 22 Z"
-              fill="#D69E2E"
+              d="M 35 22 L 30 9 L 41 15 L 50 5 L 59 15 L 70 9 L 65 22 Z"
+              fill="#F59E0B"
               stroke="#0F172A"
               strokeWidth="2.5"
             />
-            {/* Little gems on crown */}
-            <Circle cx="32" cy="10" r="1.5" fill="#E53E3E" />
-            <Circle cx="50" cy="6" r="1.5" fill="#3182CE" />
-            <Circle cx="68" cy="10" r="1.5" fill="#48BB78" />
+            {/* Jewels on Crown */}
+            <Circle cx="30" cy="9" r="1.5" fill="#EF4444" />
+            <Circle cx="50" cy="5" r="1.5" fill="#3B82F6" />
+            <Circle cx="70" cy="9" r="1.5" fill="#10B981" />
           </G>
         )}
 
         {config.accessory === 'headphones' && (
           <G stroke="#0F172A" strokeWidth="3" fill="none">
             {/* Headband */}
-            <Path d="M 26 42 Q 50 15 74 42" stroke="#805AD5" strokeWidth="4" />
+            <Path d="M 26 42 Q 50 14 74 42" stroke="#8B5CF6" strokeWidth="4" />
             {/* Ear Cups */}
-            <Ellipse cx="25" cy="46" rx="4" ry="7" fill="#805AD5" />
-            <Ellipse cx="75" cy="46" rx="4" ry="7" fill="#805AD5" />
+            <Ellipse cx="25" cy="46" rx="4" ry="7.5" fill="#8B5CF6" />
+            <Ellipse cx="75" cy="46" rx="4" ry="7.5" fill="#8B5CF6" />
           </G>
         )}
       </Svg>

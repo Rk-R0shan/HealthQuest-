@@ -8,7 +8,7 @@ import { Avatar, SKIN_COLORS, HAIR_COLORS, CLOTHING_COLORS } from '@/shared/comp
 import { useOnboardingStore } from '@/features/auth/stores/onboardingStore';
 import { colors } from '@/theme';
 
-type Category = 'skin' | 'hairStyle' | 'hairColor' | 'expression' | 'clothing' | 'accessory';
+type Category = 'skinColor' | 'hairStyle' | 'hairColor' | 'expression' | 'clothing' | 'accessory';
 
 interface OptionItem {
   id: string;
@@ -19,11 +19,11 @@ interface OptionItem {
 export default function OnboardingAvatar() {
   const router = useRouter();
   const { avatar, setAvatar } = useOnboardingStore();
-  const [activeCategory, setActiveCategory] = useState<Category>('skin');
+  const [activeCategory, setActiveCategory] = useState<Category>('skinColor');
 
   // Define customization categories
   const categories: { key: Category; label: string; icon: string }[] = [
-    { key: 'skin', label: 'Skin', icon: '🎨' },
+    { key: 'skinColor', label: 'Skin', icon: '🎨' },
     { key: 'hairStyle', label: 'Hair Style', icon: '💇' },
     { key: 'hairColor', label: 'Hair Color', icon: '🌈' },
     { key: 'expression', label: 'Face', icon: '😊' },
@@ -33,7 +33,7 @@ export default function OnboardingAvatar() {
 
   // Options lists
   const optionsMap: Record<Category, OptionItem[]> = {
-    skin: Object.keys(SKIN_COLORS).map((c) => ({ id: c, label: c.charAt(0).toUpperCase() + c.slice(1), value: c })),
+    skinColor: Object.keys(SKIN_COLORS).map((c) => ({ id: c, label: c.charAt(0).toUpperCase() + c.slice(1), value: c })),
     hairStyle: [
       { id: 'short', label: 'Short', value: 'short' },
       { id: 'spiky', label: 'Spiky', value: 'spiky' },
@@ -152,7 +152,7 @@ export default function OnboardingAvatar() {
                     className="p-3 mb-3 rounded-2xl items-center justify-center shadow-xs"
                   >
                     {/* Render visual color circles for color tabs */}
-                    {activeCategory === 'skin' && (
+                    {activeCategory === 'skinColor' && (
                       <View 
                         style={{ backgroundColor: SKIN_COLORS[opt.value], width: 28, height: 28 }} 
                         className="rounded-full border-2 border-slate-700 mb-1.5 shadow-xs"
