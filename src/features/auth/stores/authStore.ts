@@ -125,31 +125,53 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           set({ user: firebaseUser, isLoading: false, profileLoading: true });
 
           const userDocRef = doc(db, 'users', firebaseUser.uid);
+          const studentDocRef = doc(db, 'profiles', firebaseUser.uid);
+
+          // 1. Listen to student profile
+          unsubscribeStudentProfile = onSnapshot(
+            studentDocRef,
+            (studentSnap) => {
+              if (studentSnap.exists()) {
+                const sData = studentSnap.data() as ProfileDocument;
+                set({
+                  studentProfile: sData,
+                  profile: {
+                    email: firebaseUser.email || '',
+                    role: 'student',
+                    isOnboarded: true,
+                    settings: {
+                      notificationsEnabled: true,
+                      voiceEnabled: true,
+                      soundEnabled: true,
+                      hapticEnabled: true,
+                    },
+                    createdAt: sData.updatedAt || new Date().toISOString(),
+                  },
+                  profileLoading: false,
+                });
+              } else {
+                set({ studentProfile: null });
+              }
+            },
+            (error) => {
+              console.warn('Student profile snapshot error:', error);
+            }
+          );
+
+          // 2. Listen to user document
           unsubscribeProfile = onSnapshot(
             userDocRef,
             (docSnap) => {
               if (docSnap.exists()) {
                 const userData = docSnap.data() as UserProfile;
-                set({ profile: userData, profileLoading: false });
-
-                if (userData.role === 'student' && !unsubscribeStudentProfile) {
-                  const studentDocRef = doc(db, 'profiles', firebaseUser.uid);
-                  unsubscribeStudentProfile = onSnapshot(
-                    studentDocRef,
-                    (studentSnap) => {
-                      if (studentSnap.exists()) {
-                        set({ studentProfile: studentSnap.data() as ProfileDocument });
-                      } else {
-                        set({ studentProfile: null });
-                      }
-                    },
-                    (error) => {
-                      console.warn('Student profile snapshot error:', error);
-                    }
-                  );
-                }
+                set((state) => ({
+                  profile: { ...(state.profile || {}), ...userData },
+                  profileLoading: false,
+                }));
               } else {
-                set({ profile: null, profileLoading: false, studentProfile: null });
+                set((state) => ({
+                  profileLoading: state.studentProfile ? false : state.profileLoading,
+                }));
               }
             },
             (error) => {
@@ -415,15 +437,20 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       try {
         const userRef = doc(db, 'users', user.uid);
         const profileRef = doc(db, 'profiles', user.uid);
+        
         await setDoc(profileRef, {
           ...newStudentProfile,
           updatedAt: serverTimestamp(),
-        });
-        await updateDoc(userRef, {
+        }, { merge: true });
+
+        await setDoc(userRef, {
+          email: user.email || '',
+          role: 'student',
           isOnboarded: true,
-        });
+          updatedAt: serverTimestamp(),
+        }, { merge: true });
       } catch (err) {
-        console.warn('Firestore write skipped (local dev session):', err);
+        console.warn('Firestore write in completeOnboarding:', err);
       }
 
       const updatedUserProfile: UserProfile = {
