@@ -65,35 +65,41 @@ export default function OnboardingAvatar() {
 
   return (
     <Screen scrollable={false}>
-      <View className="flex-1 px-5 py-6 justify-between">
+      <View className="flex-1 px-4 py-4 justify-between" style={{ maxWidth: 540, width: '100%', alignSelf: 'center' }}>
         
         {/* Header */}
         <View className="items-center">
-          <Text className="font-nunito-extrabold text-heading-lg text-text text-center">
-            🎨 Create Your Avatar
+          <Text className="font-nunito-extrabold text-2xl text-text text-center">
+            🎨 Design Your Hero
           </Text>
-          <Text className="font-nunito-medium text-body-md text-text-secondary text-center mt-2">
-            Design a mascot to accompany you on your quests!
+          <Text className="font-nunito-bold text-xs text-text-secondary text-center mt-1">
+            Customize your mascot for HealthQuest adventures!
           </Text>
         </View>
 
-        {/* Live Preview Display */}
-        <View className="items-center justify-center my-6">
-          <Card 
-            variant="default" 
-            className="p-6 bg-white justify-center items-center rounded-3xl"
-            style={{ width: 170, height: 170 }}
+        {/* Hero Avatar Display Pedestal */}
+        <View className="items-center justify-center my-3">
+          <View 
+            className="w-40 h-40 rounded-full bg-gradient-to-b from-blue-50 to-indigo-100 border-4 border-indigo-400 shadow-lg items-center justify-center relative overflow-hidden"
+            style={{
+              backgroundColor: '#EEF2FF',
+              borderColor: '#818CF8',
+              shadowColor: '#4F46E5',
+              shadowOffset: { width: 0, height: 6 },
+              shadowOpacity: 0.15,
+              shadowRadius: 10,
+            }}
           >
             <Avatar config={avatar} size={130} />
-          </Card>
+          </View>
         </View>
 
         {/* Category Tabs Selector */}
-        <View className="mb-4">
+        <View className="mb-2">
           <ScrollView 
             horizontal 
             showsHorizontalScrollIndicator={false}
-            contentContainerStyle={{ paddingHorizontal: 4, paddingVertical: 8 }}
+            contentContainerStyle={{ paddingHorizontal: 2, paddingVertical: 4 }}
           >
             {categories.map((cat) => {
               const isActive = activeCategory === cat.key;
@@ -103,16 +109,16 @@ export default function OnboardingAvatar() {
                   onPress={() => setActiveCategory(cat.key)}
                   activeOpacity={0.8}
                   style={{
-                    backgroundColor: isActive ? colors.primary.DEFAULT : '#FFF',
+                    backgroundColor: isActive ? '#4F46E5' : '#FFFFFF',
+                    borderColor: isActive ? '#3730A3' : '#CBD5E1',
                     borderWidth: 2,
-                    borderColor: colors.text.DEFAULT,
                     borderBottomWidth: isActive ? 2 : 4,
                   }}
-                  className="px-4 py-2 mr-3 rounded-full flex-row items-center justify-center shadow-sm"
+                  className="px-3.5 py-1.5 mr-2.5 rounded-full flex-row items-center justify-center shadow-sm"
                 >
-                  <Text className="mr-1 text-base">{cat.icon}</Text>
+                  <Text className="mr-1 text-sm">{cat.icon}</Text>
                   <Text 
-                    className={`font-nunito-bold text-sm ${isActive ? 'text-white' : 'text-text'}`}
+                    className={`font-nunito-extrabold text-xs ${isActive ? 'text-white' : 'text-slate-700'}`}
                   >
                     {cat.label}
                   </Text>
@@ -123,7 +129,10 @@ export default function OnboardingAvatar() {
         </View>
 
         {/* Option Selection Grid */}
-        <View className="flex-1 bg-white border-2 border-text rounded-3xl p-4 mb-6">
+        <View 
+          className="flex-1 bg-white border-2 border-slate-200 rounded-3xl p-3.5 mb-4 shadow-sm"
+          style={{ borderBottomWidth: 4 }}
+        >
           <ScrollView showsVerticalScrollIndicator={false}>
             <View className="flex-row flex-wrap justify-between">
               {optionsMap[activeCategory].map((opt) => {
@@ -134,36 +143,36 @@ export default function OnboardingAvatar() {
                     onPress={() => handleSelectOption(opt.value)}
                     activeOpacity={0.8}
                     style={{
-                      width: '47%',
-                      backgroundColor: isSelected ? colors.primary.light : '#F8FAFC',
-                      borderColor: isSelected ? colors.primary.DEFAULT : colors.text.DEFAULT,
+                      width: '48%',
+                      backgroundColor: isSelected ? '#EEF2FF' : '#F8FAFC',
+                      borderColor: isSelected ? '#4F46E5' : '#E2E8F0',
                       borderWidth: 2,
-                      borderBottomWidth: 4,
+                      borderBottomWidth: isSelected ? 4 : 3,
                     }}
-                    className="p-4 mb-4 rounded-2xl items-center justify-center"
+                    className="p-3 mb-3 rounded-2xl items-center justify-center shadow-xs"
                   >
                     {/* Render visual color circles for color tabs */}
                     {activeCategory === 'skin' && (
                       <View 
-                        style={{ backgroundColor: SKIN_COLORS[opt.value], width: 30, height: 30 }} 
-                        className="rounded-full border border-text mb-2"
+                        style={{ backgroundColor: SKIN_COLORS[opt.value], width: 28, height: 28 }} 
+                        className="rounded-full border-2 border-slate-700 mb-1.5 shadow-xs"
                       />
                     )}
                     {activeCategory === 'hairColor' && (
                       <View 
-                        style={{ backgroundColor: HAIR_COLORS[opt.value], width: 30, height: 30 }} 
-                        className="rounded-full border border-text mb-2"
+                        style={{ backgroundColor: HAIR_COLORS[opt.value], width: 28, height: 28 }} 
+                        className="rounded-full border-2 border-slate-700 mb-1.5 shadow-xs"
                       />
                     )}
                     {activeCategory === 'clothing' && (
                       <View 
-                        style={{ backgroundColor: CLOTHING_COLORS[opt.value], width: 30, height: 30 }} 
-                        className="rounded-full border border-text mb-2"
+                        style={{ backgroundColor: CLOTHING_COLORS[opt.value], width: 28, height: 28 }} 
+                        className="rounded-full border-2 border-slate-700 mb-1.5 shadow-xs"
                       />
                     )}
                     
-                    <Text className="font-nunito-bold text-sm text-text text-center">
-                      {opt.label}
+                    <Text className={`font-nunito-extrabold text-xs text-center ${isSelected ? 'text-indigo-900' : 'text-slate-700'}`}>
+                      {opt.label} {isSelected ? '✓' : ''}
                     </Text>
                   </TouchableOpacity>
                 );
@@ -178,7 +187,7 @@ export default function OnboardingAvatar() {
           size="lg"
           onPress={() => router.push('/(onboarding)/username')}
         >
-          Next: Choose Name
+          Next: Choose Name ➔
         </Button>
         
       </View>

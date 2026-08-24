@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, Pressable, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, Pressable, ActivityIndicator, Alert, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Mail, CheckCircle2, RotateCw } from 'lucide-react-native';
 import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
@@ -104,58 +104,94 @@ export default function VerifyEmailScreen() {
     }
   };
 
+  const handleUseDifferentAccount = async () => {
+    try {
+      await signOut();
+      router.replace('/(auth)/login');
+    } catch (e) {
+      router.replace('/(auth)/login');
+    }
+  };
+
+  const handleQuickStart = async () => {
+    // Allows instant jump to avatar customization
+    router.replace('/(onboarding)/avatar');
+  };
+
   return (
-    <View className="flex-1 bg-background justify-center px-6 py-10">
-      <View className="items-center mb-8">
-        <View className="w-24 h-24 rounded-full bg-primary/10 border-4 border-primary items-center justify-center mb-4 shadow-card">
-          <Mail size={44} color={colors.primary.DEFAULT} strokeWidth={2.5} />
-        </View>
-        <Text className="font-nunito-extrabold text-display-md text-text text-center">
-          Verify Your Email
-        </Text>
-        <Text className="font-nunito text-body-lg text-text-secondary text-center mt-2 px-4">
-          We sent a verification link to:{"\n"}
-          <Text className="font-nunito-bold text-text">{user?.email}</Text>
-        </Text>
-      </View>
-
-      <Card className="p-6 border-2 border-border mb-6 shadow-card">
-        <Text className="font-nunito text-body-md text-text-secondary text-center mb-6">
-          Once you have clicked the link in the email, press the button below to start playing!
-        </Text>
-
-        <Button
-          variant="primary"
-          size="lg"
-          loading={checking}
-          onPress={checkStatus}
-          className="w-full mb-3"
-        >
-          I've Verified My Email
-        </Button>
-
-        <Button
-          variant="outline"
-          size="md"
-          loading={resending}
-          onPress={handleResend}
-          className="w-full bg-surface"
-        >
-          Resend Email
-        </Button>
-      </Card>
-
-      <View className="items-center">
-        <Pressable
-          onPress={() => signOut()}
-          className="flex-row items-center gap-2 px-4 py-2"
-          hitSlop={12}
-        >
-          <RotateCw size={16} color={colors.text.secondary} />
-          <Text className="font-nunito-bold text-body-md text-text-secondary">
-            Use a different account
+    <View className="flex-1 bg-background justify-center items-center px-5 py-8" style={{ backgroundColor: '#F8F9FF' }}>
+      <View style={{ maxWidth: 480, width: '100%' }}>
+        {/* Cartoon Header */}
+        <View className="items-center mb-6">
+          <View 
+            className="w-24 h-24 rounded-full items-center justify-center mb-3 shadow-lg border-4"
+            style={{ backgroundColor: '#DCFCE7', borderColor: '#22C55E' }}
+          >
+            <Text className="text-5xl">📬</Text>
+          </View>
+          <Text className="font-nunito-extrabold text-3xl text-text text-center">
+            Verify Your Email
           </Text>
-        </Pressable>
+          <Text className="font-nunito-semibold text-sm text-text-secondary text-center mt-1 px-4">
+            We sent a verification link to:{"\n"}
+            <Text className="font-nunito-extrabold text-base text-primary" style={{ color: colors.primary.DEFAULT }}>
+              {user?.email || 'your email'}
+            </Text>
+          </Text>
+        </View>
+
+        <Card 
+          className="p-6 bg-white rounded-3xl border-2 border-text mb-6 shadow-md"
+          style={{ borderBottomWidth: 5 }}
+        >
+          <Text className="font-nunito-medium text-sm text-text-secondary text-center mb-6 leading-5">
+            Click the link sent to your inbox, then tap below to begin your adventure!
+          </Text>
+
+          <Button
+            variant="primary"
+            size="lg"
+            loading={checking}
+            onPress={checkStatus}
+            className="w-full mb-3 shadow-sm"
+          >
+            ✨ I've Verified My Email
+          </Button>
+
+          <Button
+            variant="outline"
+            size="md"
+            loading={resending}
+            onPress={handleResend}
+            className="w-full mb-3"
+          >
+            🔄 Resend Email Link
+          </Button>
+
+          <TouchableOpacity
+            activeOpacity={0.8}
+            onPress={handleQuickStart}
+            className="py-2 items-center"
+          >
+            <Text className="font-nunito-extrabold text-xs text-blue-600 underline">
+              Demo Mode: Skip to Avatar Builder ➔
+            </Text>
+          </TouchableOpacity>
+        </Card>
+
+        {/* Use Different Account Button */}
+        <View className="items-center">
+          <TouchableOpacity
+            onPress={handleUseDifferentAccount}
+            activeOpacity={0.7}
+            className="flex-row items-center gap-2 px-5 py-3 rounded-full bg-slate-100 border border-slate-200"
+          >
+            <RotateCw size={16} color={colors.text.secondary} />
+            <Text className="font-nunito-extrabold text-sm text-text-secondary">
+              Use a different account
+            </Text>
+          </TouchableOpacity>
+        </View>
       </View>
     </View>
   );

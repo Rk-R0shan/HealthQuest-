@@ -21,26 +21,26 @@ export default function TabLayout() {
       screenOptions={{
         headerShown: false,
         tabBarActiveTintColor: colors.primary.DEFAULT,
-        tabBarInactiveTintColor: colors.text.secondary,
+        tabBarInactiveTintColor: '#64748B',
         tabBarStyle: {
-          backgroundColor: colors.surface.DEFAULT,
-          borderTopWidth: 1,
-          borderTopColor: colors.border.DEFAULT,
-          height: Platform.OS === 'ios' ? 88 : 64,
-          paddingBottom: Platform.OS === 'ios' ? 28 : 8,
+          backgroundColor: '#FFFFFF',
+          borderTopWidth: 2,
+          borderTopColor: '#E2E8F0',
+          height: Platform.OS === 'ios' ? 88 : 68,
+          paddingBottom: Platform.OS === 'ios' ? 28 : 10,
           paddingTop: 8,
-          elevation: 8,
+          maxWidth: Platform.OS === 'web' ? 640 : undefined,
+          width: '100%',
+          alignSelf: 'center',
+          elevation: 12,
           shadowColor: '#000',
-          shadowOffset: { width: 0, height: -2 },
-          shadowOpacity: 0.05,
-          shadowRadius: 8,
+          shadowOffset: { width: 0, height: -3 },
+          shadowOpacity: 0.08,
+          shadowRadius: 10,
         },
         tabBarLabelStyle: {
           fontFamily: 'Nunito_700Bold',
           fontSize: 11,
-          marginTop: 2,
-        },
-        tabBarIconStyle: {
           marginTop: 2,
         },
       }}
@@ -49,8 +49,10 @@ export default function TabLayout() {
         name="index"
         options={{
           title: 'Home',
-          tabBarIcon: ({ color, size }) => (
-            <Home size={size} color={color} strokeWidth={2.5} />
+          tabBarIcon: ({ color, focused }) => (
+            <View style={{ transform: [{ scale: focused ? 1.15 : 1 }] }}>
+              <Home size={24} color={color} strokeWidth={focused ? 3 : 2} />
+            </View>
           ),
         }}
       />
@@ -58,8 +60,10 @@ export default function TabLayout() {
         name="learn/index"
         options={{
           title: 'Learn',
-          tabBarIcon: ({ color, size }) => (
-            <BookOpen size={size} color={color} strokeWidth={2.5} />
+          tabBarIcon: ({ color, focused }) => (
+            <View style={{ transform: [{ scale: focused ? 1.15 : 1 }] }}>
+              <BookOpen size={24} color={color} strokeWidth={focused ? 3 : 2} />
+            </View>
           ),
         }}
       />
@@ -67,18 +71,18 @@ export default function TabLayout() {
         name="quiz/index"
         options={{
           title: 'Quiz',
-          tabBarIcon: ({ color, size }) => (
+          tabBarIcon: ({ focused }) => (
             <View
               style={{
-                backgroundColor: colors.accent.DEFAULT,
-                borderRadius: 16,
-                padding: 8,
-                marginTop: -20,
-                borderWidth: 3,
-                borderColor: colors.surface.DEFAULT,
+                backgroundColor: focused ? '#F59E0B' : '#FEF3C7',
+                borderRadius: 12,
+                padding: 4,
+                borderWidth: 1.5,
+                borderColor: focused ? '#D97706' : '#FDE68A',
+                transform: [{ scale: focused ? 1.15 : 1 }],
               }}
             >
-              <HelpCircle size={size + 4} color={colors.text.DEFAULT} strokeWidth={2.5} />
+              <HelpCircle size={20} color={focused ? '#FFFFFF' : '#D97706'} strokeWidth={2.5} />
             </View>
           ),
         }}
@@ -86,9 +90,11 @@ export default function TabLayout() {
       <Tabs.Screen
         name="challenges/index"
         options={{
-          title: 'Challenges',
-          tabBarIcon: ({ color, size }) => (
-            <Target size={size} color={color} strokeWidth={2.5} />
+          title: 'Quests',
+          tabBarIcon: ({ color, focused }) => (
+            <View style={{ transform: [{ scale: focused ? 1.15 : 1 }] }}>
+              <Target size={24} color={color} strokeWidth={focused ? 3 : 2} />
+            </View>
           ),
         }}
       />
@@ -96,8 +102,10 @@ export default function TabLayout() {
         name="profile/index"
         options={{
           title: 'Profile',
-          tabBarIcon: ({ color, size }) => (
-            <User size={size} color={color} strokeWidth={2.5} />
+          tabBarIcon: ({ color, focused }) => (
+            <View style={{ transform: [{ scale: focused ? 1.15 : 1 }] }}>
+              <User size={24} color={color} strokeWidth={focused ? 3 : 2} />
+            </View>
           ),
         }}
       />

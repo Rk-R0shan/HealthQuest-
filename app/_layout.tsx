@@ -86,8 +86,8 @@ export default function RootLayout() {
     const inOnboardingGroup = segments[0] === '(onboarding)';
 
     if (!user) {
-      // Not logged in → go to login
-      if (!inAuthGroup) {
+      // Not logged in → go to login screen
+      if (!inAuthGroup || segments[1] === 'verify-email') {
         router.replace('/(auth)/login');
       }
       return;

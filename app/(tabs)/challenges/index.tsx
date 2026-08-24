@@ -113,7 +113,6 @@ export default function ChallengesScreen() {
         updates.coins = (studentProfile.coins || 0) + 5;
         updates.totalXP = (studentProfile.totalXP || 0) + 10;
       }
-      // Deduct rewards if downgraded
       else if (newCount < challenge.target && currentCount >= challenge.target) {
         updates.coins = Math.max(0, (studentProfile.coins || 0) - 5);
         updates.totalXP = Math.max(0, (studentProfile.totalXP || 0) - 10);
@@ -124,44 +123,46 @@ export default function ChallengesScreen() {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-background" edges={['top']}>
-      <View className="px-5 py-4 border-b border-text bg-white">
-        <Text className="font-nunito-extrabold text-heading-lg text-text">🎯 Daily Challenges</Text>
-        <Text className="font-nunito-bold text-xs text-text-secondary mt-0.5">
-          Build healthy habits to earn bonus XP and Coins!
-        </Text>
-      </View>
+    <SafeAreaView className="flex-1 bg-background" edges={['top']} style={{ backgroundColor: '#F8F9FF' }}>
+      <View className="flex-1" style={{ maxWidth: 600, width: '100%', alignSelf: 'center' }}>
+        <View className="px-5 py-4 border-b-2 border-slate-200 bg-white">
+          <Text className="font-nunito-extrabold text-2xl text-text">🎯 Daily Quests</Text>
+          <Text className="font-nunito-bold text-xs text-text-secondary mt-0.5">
+            Build healthy habits to earn bonus XP and Coins!
+          </Text>
+        </View>
 
-      <ScrollView className="flex-1 px-5 pt-5" showsVerticalScrollIndicator={false}>
-        
-        {/* Daily Completion Header Banner */}
-        <Card 
-          variant="default" 
-          className="flex-row items-center justify-between mb-5 bg-white border-2 border-text rounded-3xl p-5 shadow-sm"
-        >
-          <View className="flex-1 mr-3">
-            <Text className="font-nunito-extrabold text-heading-sm text-text">
-              Habits Progress
-            </Text>
-            <Text className="font-nunito-bold text-xs text-text-secondary mt-1">
-              {completedCount} of {CHALLENGE_TYPES.length} goals completed today
-            </Text>
-            
-            {/* Progress bar */}
-            <View className="h-3 bg-slate-100 rounded-full border border-slate-200 mt-3 overflow-hidden">
-              <View 
-                className="h-full bg-emerald-500 rounded-full"
-                style={{ width: `${(completedCount / CHALLENGE_TYPES.length) * 100}%` }}
-              />
+        <ScrollView className="flex-1 px-4 pt-4" showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 24 }}>
+          
+          {/* Daily Completion Header Banner */}
+          <Card 
+            variant="default" 
+            className="flex-row items-center justify-between mb-4 bg-white border-2 border-slate-200 rounded-3xl p-4 shadow-sm"
+            style={{ borderBottomWidth: 4 }}
+          >
+            <View className="flex-1 mr-3">
+              <Text className="font-nunito-extrabold text-base text-text">
+                Habits Progress
+              </Text>
+              <Text className="font-nunito-bold text-xs text-slate-500 mt-0.5">
+                {completedCount} of {CHALLENGE_TYPES.length} goals completed today
+              </Text>
+              
+              {/* Progress bar */}
+              <View className="h-3 bg-slate-100 rounded-full border border-slate-200 mt-2 overflow-hidden">
+                <View 
+                  className="h-full bg-emerald-500 rounded-full"
+                  style={{ width: `${(completedCount / CHALLENGE_TYPES.length) * 100}%` }}
+                />
+              </View>
             </View>
-          </View>
-          <View className="w-14 h-14 rounded-2xl bg-orange-100 border-2 border-text items-center justify-center">
-            <Text className="text-3xl">🏆</Text>
-          </View>
-        </Card>
+            <View className="w-12 h-12 rounded-2xl bg-amber-100 border-2 border-amber-300 items-center justify-center">
+              <Text className="text-2xl">🏆</Text>
+            </View>
+          </Card>
 
-        {/* List of Challenges */}
-        <View className="gap-3 pb-10">
+          {/* List of Challenges */}
+          <View className="gap-3 pb-10">
           {CHALLENGE_TYPES.map((challenge) => {
             const count = getChallengeProgress(challenge.id);
             const isCompleted = count >= challenge.target;
@@ -254,6 +255,7 @@ export default function ChallengesScreen() {
           })}
         </View>
       </ScrollView>
+      </View>
     </SafeAreaView>
   );
 }

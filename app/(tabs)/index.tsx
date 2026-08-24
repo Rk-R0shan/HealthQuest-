@@ -63,38 +63,53 @@ export default function HomeScreen() {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-background" edges={['top']}>
-      <ScrollView className="flex-1 px-5 pt-4" showsVerticalScrollIndicator={false}>
+    <SafeAreaView className="flex-1 bg-background" edges={['top']} style={{ backgroundColor: '#F8F9FF' }}>
+      <ScrollView 
+        className="flex-1 px-4 pt-3" 
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ maxWidth: 600, width: '100%', alignSelf: 'center', paddingBottom: 24 }}
+      >
         
         {/* Top Header Section */}
-        <View className="flex-row items-center justify-between mb-5">
+        <View className="flex-row items-center justify-between mb-4">
           <View>
-            <Text className="font-nunito text-body-md text-text-secondary">
-              Welcome back! 👋
+            <Text className="font-nunito-bold text-xs text-slate-500 uppercase tracking-wider">
+              HealthQuest Explorer
             </Text>
-            <Text className="font-nunito-extrabold text-heading-lg text-text">
-              {studentProfile.nickname}
+            <Text className="font-nunito-extrabold text-2xl text-slate-800">
+              {studentProfile.nickname} 🌟
             </Text>
           </View>
-          <TouchableOpacity activeOpacity={0.8}>
-            <Card variant="pressable" className="p-1 bg-white rounded-full border-2 border-text shadow-sm">
-              <Avatar config={studentProfile.avatar} size={48} />
-            </Card>
+          <TouchableOpacity 
+            activeOpacity={0.8}
+            onPress={() => router.push('/(tabs)/profile')}
+          >
+            <View 
+              className="w-13 h-13 rounded-full bg-indigo-50 border-3 border-indigo-400 items-center justify-center overflow-hidden shadow-sm"
+              style={{ width: 52, height: 52 }}
+            >
+              <Avatar config={studentProfile.avatar} size={46} />
+            </View>
           </TouchableOpacity>
         </View>
 
         {/* Daily XP Progress Bar Card */}
-        <Card variant="default" className="p-5 bg-white border-2 border-text rounded-3xl mb-4 shadow-sm">
-          <View className="flex-row items-center justify-between mb-3">
-            <View>
-              <Text className="font-nunito-extrabold text-heading-sm text-text">
-                Level {studentProfile.level}
-              </Text>
-              <Text className="font-nunito-bold text-xs text-text-secondary">
+        <View 
+          className="p-4 bg-white border-2 border-slate-200 rounded-3xl mb-4 shadow-sm"
+          style={{ borderBottomWidth: 4 }}
+        >
+          <View className="flex-row items-center justify-between mb-2">
+            <View className="flex-row items-center gap-2">
+              <View className="px-2.5 py-0.5 rounded-full bg-indigo-100 border border-indigo-300">
+                <Text className="font-nunito-extrabold text-xs text-indigo-700">
+                  Level {studentProfile.level || 1}
+                </Text>
+              </View>
+              <Text className="font-nunito-bold text-xs text-slate-500">
                 Daily Goal: {dailyGoal} XP
               </Text>
             </View>
-            <Text className="font-nunito-extrabold text-body-lg text-primary">
+            <Text className="font-nunito-extrabold text-sm text-emerald-600">
               {currentXP} / {dailyGoal} XP
             </Text>
           </View>
@@ -102,75 +117,88 @@ export default function HomeScreen() {
           {/* Duolingo-style Progress Bar */}
           <View className="h-4 bg-slate-100 rounded-full overflow-hidden border border-slate-200">
             <View 
-              className="h-full bg-primary rounded-full" 
-              style={{ width: `${xpPercentage}%`, backgroundColor: colors.primary.DEFAULT }} 
+              className="h-full bg-emerald-500 rounded-full" 
+              style={{ width: `${xpPercentage}%`, backgroundColor: '#10B981' }} 
             />
           </View>
           
-          <Text className="font-nunito-semibold text-xs text-text-secondary mt-2">
+          <Text className="font-nunito-bold text-xs text-slate-500 mt-2">
             {xpPercentage >= 100 
-              ? '🎉 Daily goal completed! Keep it up!' 
-              : `Earn ${dailyGoal - currentXP} more XP to reach your daily goal!`}
+              ? '🎉 Daily goal completed! Super job!' 
+              : `Earn ${Math.max(0, dailyGoal - currentXP)} more XP to reach your daily goal!`}
           </Text>
-        </Card>
+        </View>
 
-        {/* Stats Summary Row */}
-        <View className="flex-row gap-3 mb-5">
+        {/* Stats Summary Row with Vibrant Cartoon Cards */}
+        <View className="flex-row gap-2.5 mb-4">
           {/* Streak Flame */}
-          <View className="flex-1 bg-white rounded-2xl p-4 border-2 border-text items-center shadow-sm">
-            <Text className="text-3xl mb-1">🔥</Text>
-            <Text className="font-nunito-extrabold text-heading-md text-orange">
+          <View 
+            className="flex-1 bg-amber-50 rounded-2xl p-3 border-2 border-amber-300 items-center shadow-xs"
+            style={{ borderBottomWidth: 4 }}
+          >
+            <Text className="text-2xl mb-0.5">🔥</Text>
+            <Text className="font-nunito-extrabold text-lg text-amber-900">
               {studentProfile.streakCount || 0}
             </Text>
-            <Text className="font-nunito-bold text-xs text-text-secondary">Streak</Text>
+            <Text className="font-nunito-bold text-[10px] text-amber-700 uppercase">Streak</Text>
           </View>
           
           {/* Coins Balance */}
-          <View className="flex-1 bg-white rounded-2xl p-4 border-2 border-text items-center shadow-sm">
-            <Text className="text-3xl mb-1">🪙</Text>
-            <Text className="font-nunito-extrabold text-heading-md text-yellow-500">
+          <View 
+            className="flex-1 bg-yellow-50 rounded-2xl p-3 border-2 border-yellow-300 items-center shadow-xs"
+            style={{ borderBottomWidth: 4 }}
+          >
+            <Text className="text-2xl mb-0.5">🪙</Text>
+            <Text className="font-nunito-extrabold text-lg text-yellow-900">
               {studentProfile.coins || 0}
             </Text>
-            <Text className="font-nunito-bold text-xs text-text-secondary">Coins</Text>
+            <Text className="font-nunito-bold text-[10px] text-yellow-700 uppercase">Coins</Text>
           </View>
           
-          {/* Energy Hearts */}
-          <View className="flex-1 bg-white rounded-2xl p-4 border-2 border-text items-center shadow-sm">
-            <Text className="text-3xl mb-1">⚡</Text>
-            <Text className="font-nunito-extrabold text-heading-md text-purple-600">
+          {/* Energy Lightning */}
+          <View 
+            className="flex-1 bg-purple-50 rounded-2xl p-3 border-2 border-purple-300 items-center shadow-xs"
+            style={{ borderBottomWidth: 4 }}
+          >
+            <Text className="text-2xl mb-0.5">⚡</Text>
+            <Text className="font-nunito-extrabold text-lg text-purple-900">
               {studentProfile.energy || 100}
             </Text>
-            <Text className="font-nunito-bold text-xs text-text-secondary">Energy</Text>
+            <Text className="font-nunito-bold text-[10px] text-purple-700 uppercase">Energy</Text>
           </View>
         </View>
 
         {/* Interactive Dynamic Daily Challenge Card (Hydration Tracker) */}
-        <Card 
-          variant="default" 
-          className="p-5 bg-white mb-5 rounded-3xl border-2 shadow-sm"
-          style={{ borderColor: isHydrated ? colors.primary.DEFAULT : '#3182CE' }}
+        <View 
+          className="p-4 bg-white mb-4 rounded-3xl border-2 border-blue-200 shadow-sm"
+          style={{ borderBottomWidth: 4 }}
         >
-          <View className="flex-row justify-between items-center mb-3">
-            <Text className="font-nunito-extrabold text-heading-sm text-text">
-              💧 Daily Hydration Quest
-            </Text>
-            <Text className="font-nunito-extrabold text-sm text-blue-600">
-              {glasses} / {goalGlasses} Cups
-            </Text>
+          <View className="flex-row justify-between items-center mb-2">
+            <View className="flex-row items-center gap-1.5">
+              <Text className="text-lg">💧</Text>
+              <Text className="font-nunito-extrabold text-base text-slate-800">
+                Hydration Quest
+              </Text>
+            </View>
+            <View className="px-2 py-0.5 rounded-full bg-blue-100 border border-blue-300">
+              <Text className="font-nunito-extrabold text-xs text-blue-700">
+                {glasses} / {goalGlasses} Cups
+              </Text>
+            </View>
           </View>
 
-          <Text className="font-nunito-medium text-body-md text-text-secondary mb-4">
-            Drink 8 glasses of water today to stay hydrated and energized!
+          <Text className="font-nunito-medium text-xs text-slate-600 mb-3 leading-4">
+            Drink 8 glasses of fresh water today to power up your brain & muscles!
           </Text>
 
           {/* Visual Glass Tracker Indicators */}
-          <View className="flex-row justify-between mb-4 px-1">
+          <View className="flex-row justify-between mb-3 px-1 py-1.5 bg-blue-50/60 rounded-2xl border border-blue-100">
             {Array.from({ length: goalGlasses }).map((_, idx) => {
               const filled = idx < glasses;
               return (
                 <Text 
                   key={idx} 
-                  className={`text-2xl ${filled ? 'opacity-100' : 'opacity-20 grayscale'}`}
+                  className={`text-xl ${filled ? 'opacity-100' : 'opacity-25 grayscale'}`}
                   style={{ transform: [{ scale: filled ? 1.15 : 1 }] }}
                 >
                   🥛
@@ -180,105 +208,120 @@ export default function HomeScreen() {
           </View>
 
           {/* Log Buttons */}
-          <View className="flex-row justify-between gap-3">
+          <View className="flex-row justify-between gap-2.5">
             <TouchableOpacity
               onPress={() => handleUpdateWater(-1)}
               activeOpacity={0.8}
               disabled={glasses === 0}
-              className="flex-1 py-3 border-2 border-text rounded-2xl bg-slate-50 border-b-4 items-center justify-center"
-              style={{ opacity: glasses === 0 ? 0.5 : 1 }}
+              className="flex-1 py-2.5 border-2 border-slate-300 rounded-2xl bg-slate-100 items-center justify-center"
+              style={{ borderBottomWidth: 3, opacity: glasses === 0 ? 0.4 : 1 }}
             >
-              <Text className="font-nunito-extrabold text-base text-text">Remove Cup</Text>
+              <Text className="font-nunito-extrabold text-xs text-slate-700">- Remove Cup</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
               onPress={() => handleUpdateWater(1)}
               activeOpacity={0.8}
-              className="flex-1 py-3 border-2 border-text rounded-2xl bg-blue-500 border-b-4 items-center justify-center"
-              style={{ backgroundColor: '#3182CE' }}
+              className="flex-1 py-2.5 border-2 border-blue-600 rounded-2xl bg-blue-500 items-center justify-center"
+              style={{ borderBottomWidth: 3, backgroundColor: '#3B82F6', borderColor: '#1D4ED8' }}
             >
-              <Text className="font-nunito-extrabold text-base text-white">Log Cup 🥛</Text>
+              <Text className="font-nunito-extrabold text-xs text-white">+ Log Cup 🥛</Text>
             </TouchableOpacity>
           </View>
 
           {/* Celebration Success Overlay Banner */}
           {isHydrated && (
-            <View className="mt-4 bg-emerald-50 border border-emerald-200 p-3 rounded-2xl items-center">
+            <View className="mt-3 bg-emerald-50 border border-emerald-300 p-2.5 rounded-2xl items-center">
               <Text className="font-nunito-bold text-xs text-emerald-800 text-center">
-                🎉 Awesome job! You completed the challenge! (+10 🪙, +15 ⚡)
+                🎉 Super Hydrated! Quest Complete! (+10 🪙, +15 ⚡)
               </Text>
             </View>
           )}
-        </Card>
+        </View>
 
-        {/* Leaderboards Showcase Card */}
+        {/* Leaderboard Showcase Card */}
         <TouchableOpacity
           activeOpacity={0.8}
           onPress={() => router.push('/leaderboard')}
         >
-          <Card 
-            className="p-5 bg-white mb-5 rounded-3xl border-2 border-text shadow-sm"
+          <View 
+            className="p-4 bg-white mb-4 rounded-3xl border-2 border-slate-200 shadow-sm"
+            style={{ borderBottomWidth: 4 }}
           >
-            <View className="flex-row justify-between items-center mb-3">
-              <Text className="font-nunito-extrabold text-heading-sm text-text">
-                🏆 Hero Leaderboard
-              </Text>
-              <View className="flex-row items-center">
-                <Text className="font-nunito-extrabold text-xs text-primary mr-1">View All</Text>
-                <ChevronRight size={16} color={colors.primary.DEFAULT} strokeWidth={3} />
-              </View>
-            </View>
-            <Text className="font-nunito-medium text-body-md text-text-secondary mb-4">
-              See how your XP compares with other players in the game!
-            </Text>
-            <View className="flex-row items-center bg-slate-50 border border-slate-200 p-3.5 rounded-2xl justify-between">
-              <View className="flex-row items-center">
-                <Text className="text-2xl mr-2.5">👑</Text>
-                <Text className="font-nunito-extrabold text-body-md text-text">
-                  Rankings Board Active
+            <View className="flex-row justify-between items-center mb-1.5">
+              <View className="flex-row items-center gap-1.5">
+                <Text className="text-lg">🏆</Text>
+                <Text className="font-nunito-extrabold text-base text-slate-800">
+                  Hero Leaderboard
                 </Text>
               </View>
-              <View className="bg-purple/10 px-3 py-1 rounded-full border border-purple/20">
-                <Text className="font-nunito-extrabold text-[10px] text-purple">
+              <View className="flex-row items-center">
+                <Text className="font-nunito-extrabold text-xs text-indigo-600 mr-1">View All</Text>
+                <ChevronRight size={14} color="#4F46E5" strokeWidth={3} />
+              </View>
+            </View>
+            <Text className="font-nunito-medium text-xs text-slate-500 mb-3">
+              Compete with classmates and climb to the #1 podium!
+            </Text>
+            <View className="flex-row items-center bg-indigo-50/60 border border-indigo-100 p-3 rounded-2xl justify-between">
+              <View className="flex-row items-center">
+                <Text className="text-xl mr-2">👑</Text>
+                <Text className="font-nunito-extrabold text-xs text-indigo-950">
+                  Weekly League Active
+                </Text>
+              </View>
+              <View className="bg-indigo-600 px-2.5 py-0.5 rounded-full">
+                <Text className="font-nunito-extrabold text-[10px] text-white">
                   TOP 50
                 </Text>
               </View>
             </View>
-          </Card>
+          </View>
         </TouchableOpacity>
 
         {/* Continue Learning Course Section */}
-        <Text className="font-nunito-extrabold text-heading-sm text-text mb-3">
+        <Text className="font-nunito-extrabold text-base text-slate-800 mb-2">
           📚 Continue Learning
         </Text>
         <TouchableOpacity
           activeOpacity={0.8}
-          onPress={() => router.push('/learn/lesson_nutrition_1')}
+          onPress={() => router.push('/(tabs)/learn/lesson_1_nutrition')}
         >
-          <Card className="p-5 bg-white border-2 border-text rounded-3xl mb-5 shadow-sm">
+          <View 
+            className="p-4 bg-white border-2 border-slate-200 rounded-3xl mb-4 shadow-sm"
+            style={{ borderBottomWidth: 4 }}
+          >
             <View className="flex-row items-center">
-              <Text className="text-4xl mr-4">🍎</Text>
+              <View className="w-12 h-12 rounded-2xl bg-red-50 border border-red-200 items-center justify-center mr-3">
+                <Text className="text-2xl">🍎</Text>
+              </View>
               <View className="flex-1">
-                <Text className="font-nunito-extrabold text-body-lg text-text">
-                  Intro to Nutrition
+                <Text className="font-nunito-extrabold text-sm text-slate-800">
+                  Intro to Fruits & Superpowers
                 </Text>
-                <Text className="font-nunito-bold text-xs text-text-secondary mt-1">
-                  Learn why colorful fruits are like superpowers!
+                <Text className="font-nunito-bold text-xs text-slate-500 mt-0.5">
+                  Learn why colorful fruits protect your body!
                 </Text>
               </View>
+              <Text className="font-nunito-extrabold text-xs text-red-500 ml-2">
+                Play ➔
+              </Text>
             </View>
-          </Card>
+          </View>
         </TouchableOpacity>
 
         {/* Daily Health Tip Panel */}
-        <Card variant="default" className="p-5 bg-teal-50 border-2 border-teal-200 rounded-3xl mb-8 shadow-sm">
-          <Text className="font-nunito-extrabold text-heading-sm text-teal-800 mb-2">
+        <View 
+          className="p-4 bg-teal-50 border-2 border-teal-300 rounded-3xl mb-6 shadow-sm"
+          style={{ borderBottomWidth: 4 }}
+        >
+          <Text className="font-nunito-extrabold text-sm text-teal-900 mb-1">
             💡 Health Tip of the Day
           </Text>
-          <Text className="font-nunito-medium text-body-md text-teal-900 leading-6">
+          <Text className="font-nunito-medium text-xs text-teal-800 leading-5">
             Eating colorful fruits and vegetables gives your body different vitamins it needs to grow big, strong, and think clearly!
           </Text>
-        </Card>
+        </View>
 
       </ScrollView>
     </SafeAreaView>

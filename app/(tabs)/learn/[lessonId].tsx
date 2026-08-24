@@ -14,6 +14,8 @@ import { checkAndAwardAchievement } from '@/shared/utils/achievements';
 import { useNotification } from '@/shared/components/ui/NotificationContext';
 import { colors } from '@/theme';
 
+import { DEFAULT_LESSONS } from './index';
+
 export default function LessonDetailsScreen() {
   const { lessonId } = useLocalSearchParams();
   const router = useRouter();
@@ -24,7 +26,7 @@ export default function LessonDetailsScreen() {
   const [loading, setLoading] = useState(true);
   const [savingProgress, setSavingProgress] = useState(false);
   const [completed, setCompleted] = useState(false);
-  const [hasQuiz, setHasQuiz] = useState(false);
+  const [hasQuiz, setHasQuiz] = useState(true);
   const [passedQuiz, setPassedQuiz] = useState(false);
   const [showCelebration, setShowCelebration] = useState(false);
 
@@ -35,35 +37,35 @@ export default function LessonDetailsScreen() {
     async function fetchLessonData() {
       try {
         setLoading(true);
-        // 1. Fetch lesson definition
-        const lessonRef = doc(db, 'lessons', lessonId as string);
-        const lessonSnap = await getDoc(lessonRef);
-        
-        if (lessonSnap.exists()) {
-          const lessonData = lessonSnap.data() as LessonDocument;
-          setLesson(lessonData);
-          
-          // 2. Fetch student completion status
-          if (user) {
+        let foundLesson: LessonDocument | null = null;
+
+        // 1. Try Fetch lesson definition from Firestore
+        try {
+          const lessonRef = doc(db, 'lessons', lessonId as string);
+          const lessonSnap = await getDoc(lessonRef);
+          if (lessonSnap.exists()) {
+            foundLesson = { id: lessonSnap.id, ...lessonSnap.data() } as LessonDocument;
+          }
+        } catch (e) {
+          console.warn('Firestore lesson fetch fallback:', e);
+        }
+
+        // Fallback to built-in lessons if not in firestore
+        if (!foundLesson) {
+          foundLesson = DEFAULT_LESSONS.find((l) => l.id === lessonId) || null;
+        }
+
+        setLesson(foundLesson);
+
+        // 2. Fetch student completion status
+        if (user) {
+          try {
             const progressRef = doc(db, 'lessonProgress', `${user.uid}_${lessonId}`);
             const progressSnap = await getDoc(progressRef);
             if (progressSnap.exists() && progressSnap.data().completed) {
               setCompleted(true);
             }
-
-            // 3. Fetch linked quiz and passed attempt status
-            const quizId = `quiz_${(lessonId as string).replace('lesson_', '')}`;
-            const quizRef = doc(db, 'quizzes', quizId);
-            const quizSnap = await getDoc(quizRef);
-            if (quizSnap.exists()) {
-              setHasQuiz(true);
-              const attemptRef = doc(db, 'quizAttempts', `${user.uid}_${quizId}`);
-              const attemptSnap = await getDoc(attemptRef);
-              if (attemptSnap.exists() && attemptSnap.data().passed) {
-                setPassedQuiz(true);
-              }
-            }
-          }
+          } catch (e) {}
         }
       } catch (err) {
         console.error('Error loading lesson details:', err);

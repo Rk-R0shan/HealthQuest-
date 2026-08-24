@@ -46,34 +46,39 @@ export default function OnboardingUsername() {
 
   return (
     <Screen scrollable={false}>
-      <View className="flex-1 px-5 py-6 justify-between">
+      <View className="flex-1 px-4 py-6 justify-between" style={{ maxWidth: 520, width: '100%', alignSelf: 'center' }}>
         
         {/* Header */}
         <View className="items-center">
-          <Text className="font-nunito-extrabold text-heading-lg text-text text-center">
-            👋 What's Your Name?
+          <Text className="font-nunito-extrabold text-2xl text-text text-center">
+            👋 What's Your Hero Name?
           </Text>
-          <Text className="font-nunito-medium text-body-md text-text-secondary text-center mt-2">
-            Choose a nickname for your profile card!
+          <Text className="font-nunito-semibold text-xs text-text-secondary text-center mt-1">
+            Choose a fun nickname for your HealthQuest adventure!
           </Text>
         </View>
 
         {/* Mascot Banner */}
         <View className="items-center my-4">
-          <Card variant="pressable" className="flex-row items-center p-4 bg-white rounded-3xl w-full border-2 border-text shadow-sm">
-            <Avatar config={avatar} size={70} />
-            <View className="flex-1 ml-4 bg-slate-50 border border-slate-200 p-3 rounded-2xl">
-              <Text className="font-nunito-bold text-sm text-text-secondary">
-                "Hi! I'm your health buddy. What should I call you?"
+          <View 
+            className="flex-row items-center p-4 bg-white rounded-3xl w-full border-2 border-slate-200 shadow-sm"
+            style={{ borderBottomWidth: 4 }}
+          >
+            <View className="w-16 h-16 rounded-full bg-indigo-50 border-2 border-indigo-300 items-center justify-center overflow-hidden mr-3">
+              <Avatar config={avatar} size={58} />
+            </View>
+            <View className="flex-1 bg-slate-50 border border-slate-200 p-3 rounded-2xl">
+              <Text className="font-nunito-bold text-xs text-slate-700">
+                "Hi! I'm your health buddy. What should I call you on our quests?"
               </Text>
             </View>
-          </Card>
+          </View>
         </View>
 
         {/* Name Input Field */}
         <View className="flex-1 justify-center max-h-[160px] mb-6">
-          <Text className="font-nunito-bold text-label text-text mb-2 ml-1">
-            Nickname
+          <Text className="font-nunito-extrabold text-xs text-slate-700 uppercase tracking-wider mb-2 ml-1">
+            Hero Nickname
           </Text>
           
           <Controller
@@ -85,12 +90,12 @@ export default function OnboardingUsername() {
                   onBlur={onBlur}
                   onChangeText={onChange}
                   value={value}
-                  placeholder="Enter your hero name"
-                  placeholderTextColor={colors.text.secondary}
-                  className="font-nunito-bold text-body-lg text-text px-5 py-4 bg-slate-50 border-2 rounded-2xl w-full"
+                  placeholder="e.g. Captain Spark"
+                  placeholderTextColor="#94A3B8"
+                  className="font-nunito-extrabold text-lg text-text px-5 py-3.5 bg-white border-2 rounded-2xl w-full"
                   style={{
-                    borderColor: errors.nickname ? colors.error : colors.text.DEFAULT,
-                    backgroundColor: '#F8FAFC',
+                    borderColor: errors.nickname ? colors.error : '#CBD5E1',
+                    borderBottomWidth: 4,
                   }}
                   autoCapitalize="words"
                   autoCorrect={false}
@@ -101,7 +106,7 @@ export default function OnboardingUsername() {
 
           {/* Form Validation Errors */}
           {errors.nickname && (
-            <Text className="font-nunito-bold text-xs text-error mt-2 ml-1">
+            <Text className="font-nunito-bold text-xs text-red-500 mt-2 ml-1">
               ⚠️ {errors.nickname.message}
             </Text>
           )}
@@ -114,7 +119,7 @@ export default function OnboardingUsername() {
           onPress={handleSubmit(onSubmit)}
           isLoading={isSubmitting}
         >
-          Next: Choose Grade
+          Next: Choose Grade ➔
         </Button>
         
       </View>

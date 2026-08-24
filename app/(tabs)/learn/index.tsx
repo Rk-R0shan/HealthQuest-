@@ -17,15 +17,130 @@ interface CategoryOption {
   lightColor: string;
 }
 
+export const DEFAULT_LESSONS: LessonDocument[] = [
+  {
+    id: 'lesson_1_nutrition',
+    title: 'Intro to Fruits 🍎',
+    description: 'Discover why eating different colored fruits is like giving your body special superpowers!',
+    category: 'nutrition',
+    grade: 'Grade 3',
+    xpReward: 15,
+    videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
+    thumbnailUrl: 'https://images.unsplash.com/photo-1619546813926-a78fa6372cd2?q=80&w=400&auto=format&fit=crop',
+    duration: 15,
+    sections: [
+      {
+        id: 'sec_1',
+        type: 'video',
+        title: 'Watch & Learn',
+        content: 'Fruits are packed with vitamins that help you think fast and run super quick!',
+        videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
+        duration: 15,
+      },
+      {
+        id: 'sec_2',
+        type: 'text',
+        title: 'Color Power!',
+        content: 'Red fruits like apples protect your heart. Yellow fruits like bananas give you steady energy. Purple fruits like grapes help your brain remember things! Try to eat a rainbow of fruits every single day.',
+      },
+    ],
+    createdAt: new Date().toISOString(),
+  },
+  {
+    id: 'lesson_2_fitness',
+    title: 'Active Playing 🏃',
+    description: 'Learn why jumping, running, and playing games outside keeps your heart happy and muscles growing!',
+    category: 'fitness',
+    grade: 'Grade 3',
+    xpReward: 20,
+    videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4',
+    thumbnailUrl: 'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?q=80&w=400&auto=format&fit=crop',
+    duration: 20,
+    sections: [
+      {
+        id: 'sec_1',
+        type: 'video',
+        title: 'Move Your Body',
+        content: 'Your heart is a muscle that gets stronger every time you run, jump, or dance!',
+        videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4',
+        duration: 20,
+      },
+      {
+        id: 'sec_2',
+        type: 'text',
+        title: '30-Minute Challenge',
+        content: 'Try to play actively for at least 30 minutes today. Go for a bike ride, play tag with friends, or show off your best dance moves in the living room!',
+      },
+    ],
+    createdAt: new Date().toISOString(),
+  },
+  {
+    id: 'lesson_3_sleep',
+    title: 'Power of Sleep 💤',
+    description: 'Sleeping is when your body recharges like a phone, repairs muscles, and creates memories.',
+    category: 'sleep',
+    grade: 'Grade 3',
+    xpReward: 15,
+    videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
+    thumbnailUrl: 'https://images.unsplash.com/photo-1541480601022-2308c0f02487?q=80&w=400&auto=format&fit=crop',
+    duration: 15,
+    sections: [
+      {
+        id: 'sec_1',
+        type: 'video',
+        title: 'Why We Sleep',
+        content: 'Sleeping helps your brain store what you learned today and recharges your batteries for tomorrow.',
+        videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
+        duration: 15,
+      },
+      {
+        id: 'sec_2',
+        type: 'text',
+        title: 'Sleep Rules',
+        content: 'Kids need 9 to 11 hours of sleep every night. Turn off all screens at least 1 hour before bedtime to help your brain get ready for deep, relaxing rest.',
+      },
+    ],
+    createdAt: new Date().toISOString(),
+  },
+  {
+    id: 'lesson_4_hygiene',
+    title: 'Sparkling Teeth 🧼',
+    description: 'Learn the proper way to brush your teeth and keep germs away from your beautiful smile!',
+    category: 'hygiene',
+    grade: 'Grade 3',
+    xpReward: 15,
+    videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4',
+    thumbnailUrl: 'https://images.unsplash.com/photo-1471864190281-a93a3070b6de?q=80&w=400&auto=format&fit=crop',
+    duration: 15,
+    sections: [
+      {
+        id: 'sec_1',
+        type: 'video',
+        title: 'Brush Like a Pro',
+        content: 'Brushing twice a day keeps cavity bugs away!',
+        videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4',
+        duration: 15,
+      },
+      {
+        id: 'sec_2',
+        type: 'text',
+        title: 'The 2-Minute Rule',
+        content: 'Brushing should take exactly 2 minutes! Make sure to brush the fronts, backs, and chewing surfaces of all your teeth.',
+      },
+    ],
+    createdAt: new Date().toISOString(),
+  },
+];
+
 export default function LearnScreen() {
   const router = useRouter();
   const { user } = useAuthStore();
   
   const [activeCategory, setActiveCategory] = useState<LessonCategory>('nutrition');
-  const [lessons, setLessons] = useState<LessonDocument[]>([]);
+  const [lessons, setLessons] = useState<LessonDocument[]>(DEFAULT_LESSONS);
   const [completedLessons, setCompletedLessons] = useState<Record<string, boolean>>({});
   const [assignedLessons, setAssignedLessons] = useState<Record<string, boolean>>({});
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
 
   const categories: CategoryOption[] = [
     { id: 'nutrition', title: 'Nutrition', icon: '🍎', color: '#E53E3E', lightColor: '#FFF5F5' },
@@ -38,22 +153,26 @@ export default function LearnScreen() {
   useEffect(() => {
     if (!user) return;
 
-    setLoading(true);
-    const lessonsQuery = query(collection(db, 'lessons'));
-    
-    const unsubscribe = onSnapshot(lessonsQuery, (snapshot) => {
-      const lessonsList: LessonDocument[] = [];
-      snapshot.forEach((doc) => {
-        lessonsList.push({ id: doc.id, ...doc.data() } as LessonDocument);
+    try {
+      const lessonsQuery = query(collection(db, 'lessons'));
+      const unsubscribe = onSnapshot(lessonsQuery, (snapshot) => {
+        const lessonsList: LessonDocument[] = [];
+        snapshot.forEach((doc) => {
+          lessonsList.push({ id: doc.id, ...doc.data() } as LessonDocument);
+        });
+        if (lessonsList.length > 0) {
+          setLessons(lessonsList);
+        }
+        setLoading(false);
+      }, (error) => {
+        console.warn('Error fetching lessons, using built-in curriculum:', error);
+        setLoading(false);
       });
-      setLessons(lessonsList);
-      setLoading(false);
-    }, (error) => {
-      console.error('Error fetching lessons:', error);
-      setLoading(false);
-    });
 
-    return unsubscribe;
+      return unsubscribe;
+    } catch (e) {
+      setLoading(false);
+    }
   }, [user]);
 
   // Subscribe to teacher assignments
@@ -104,15 +223,15 @@ export default function LearnScreen() {
   const activeCatInfo = categories.find((c) => c.id === activeCategory)!;
 
   return (
-    <SafeAreaView className="flex-1 bg-background" edges={['top']}>
-      <View className="flex-1 px-5 pt-4">
+    <SafeAreaView className="flex-1 bg-background" edges={['top']} style={{ backgroundColor: '#F8F9FF' }}>
+      <View className="flex-1 px-4 pt-3" style={{ maxWidth: 600, width: '100%', alignSelf: 'center' }}>
         
         {/* Header */}
-        <View className="mb-4">
-          <Text className="font-nunito-extrabold text-heading-lg text-text">
-            📚 Learning Journey
+        <View className="mb-3">
+          <Text className="font-nunito-extrabold text-2xl text-text">
+            📚 Learning Adventures
           </Text>
-          <Text className="font-nunito-medium text-body-md text-text-secondary mt-1">
+          <Text className="font-nunito-bold text-xs text-text-secondary mt-0.5">
             Choose a topic and unlock health superpowers!
           </Text>
         </View>
