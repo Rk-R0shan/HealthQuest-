@@ -599,13 +599,18 @@ export default function QuizScreen() {
   }
 
   // View: Quiz Start Screen
-  if (gameState === 'start' && activeQuiz) {
+  if (gameState === 'start') {
+    const currentQuiz = activeQuiz || DEFAULT_QUIZZES.find((q) => q.id === quizIdParam || q.lessonId === quizIdParam) || DEFAULT_QUIZZES[0];
     return (
       <SafeAreaView className="flex-1 bg-background" edges={['top']} style={{ backgroundColor: '#F8F9FF' }}>
         <View className="flex-1 px-4 py-5 justify-between" style={{ maxWidth: 540, width: '100%', alignSelf: 'center' }}>
           <View>
             <TouchableOpacity
-              onPress={() => router.replace('/(tabs)/quiz')}
+              onPress={() => {
+                setActiveQuiz(null);
+                setGameState('hub');
+                router.replace('/(tabs)/quiz');
+              }}
               className="self-start px-3.5 py-1.5 bg-slate-100 border border-slate-300 rounded-full mb-4"
             >
               <Text className="font-nunito-bold text-xs text-text">◀ Arena Hub</Text>
@@ -614,18 +619,18 @@ export default function QuizScreen() {
             <View className="items-center my-2">
               <View className="w-20 h-20 rounded-full bg-amber-100 border-4 border-amber-300 items-center justify-center mb-3 shadow-sm">
                 <Text className="text-4xl">
-                  {activeQuiz.id?.includes('nutrition')
+                  {currentQuiz.id?.includes('nutrition')
                     ? '🍎'
-                    : activeQuiz.id?.includes('fitness')
+                    : currentQuiz.id?.includes('fitness')
                     ? '🏃'
-                    : activeQuiz.id?.includes('sleep')
+                    : currentQuiz.id?.includes('sleep')
                     ? '💤'
                     : '🧼'}
                 </Text>
               </View>
 
               <Text className="font-nunito-extrabold text-2xl text-text text-center mb-1">
-                {activeQuiz.title}
+                {currentQuiz.title}
               </Text>
               <Text className="font-nunito-bold text-xs text-slate-500 text-center mb-4">
                 Tap large pictures, listen to audio, and win treasure!
@@ -637,17 +642,17 @@ export default function QuizScreen() {
 
               <View className="flex-row justify-between border-b border-slate-100 pb-2 mb-2">
                 <Text className="font-nunito-bold text-xs text-slate-500">⚡ Energy to Play</Text>
-                <Text className="font-nunito-extrabold text-xs text-blue-600">-{activeQuiz.energyCost} Energy</Text>
+                <Text className="font-nunito-extrabold text-xs text-blue-600">-{currentQuiz.energyCost} Energy</Text>
               </View>
 
               <View className="flex-row justify-between border-b border-slate-100 pb-2 mb-2">
                 <Text className="font-nunito-bold text-xs text-slate-500">🏆 XP Reward</Text>
-                <Text className="font-nunito-extrabold text-xs text-emerald-600">+{activeQuiz.rewardsXP} XP</Text>
+                <Text className="font-nunito-extrabold text-xs text-emerald-600">+{currentQuiz.rewardsXP} XP</Text>
               </View>
 
               <View className="flex-row justify-between">
                 <Text className="font-nunito-bold text-xs text-slate-500">🪙 Gold Coins</Text>
-                <Text className="font-nunito-extrabold text-xs text-yellow-600">+{activeQuiz.rewardsCoins} Coins</Text>
+                <Text className="font-nunito-extrabold text-xs text-yellow-600">+{currentQuiz.rewardsCoins} Coins</Text>
               </View>
             </Card>
 
@@ -672,9 +677,10 @@ export default function QuizScreen() {
   }
 
   // View: Playing / Answering Questions
-  if (gameState === 'playing' && activeQuiz) {
-    const questions = activeQuiz.questions;
-    const currentQuestion = questions[currentQuestionIdx];
+  if (gameState === 'playing') {
+    const currentQuiz = activeQuiz || DEFAULT_QUIZZES.find((q) => q.id === quizIdParam || q.lessonId === quizIdParam) || DEFAULT_QUIZZES[0];
+    const questions = currentQuiz.questions;
+    const currentQuestion = questions[currentQuestionIdx] || questions[0];
     const totalQuestions = questions.length;
 
     return (
@@ -860,8 +866,9 @@ export default function QuizScreen() {
   }
 
   // View: Quiz Results
-  if (gameState === 'results' && activeQuiz) {
-    const totalQuestions = activeQuiz.questions.length;
+  if (gameState === 'results') {
+    const currentQuiz = activeQuiz || DEFAULT_QUIZZES.find((q) => q.id === quizIdParam || q.lessonId === quizIdParam) || DEFAULT_QUIZZES[0];
+    const totalQuestions = currentQuiz.questions.length;
     const scorePercentage = Math.round((correctAnswersCount / totalQuestions) * 100);
     const passed = scorePercentage >= 60;
 
@@ -935,5 +942,16 @@ export default function QuizScreen() {
     );
   }
 
-  return null;
+  // Fallback: Never return null
+  return (
+    <SafeAreaView className="flex-1 bg-background" edges={['top']} style={{ backgroundColor: '#F8F9FF' }}>
+      <View className="flex-1 px-4 py-5 justify-center items-center" style={{ maxWidth: 540, width: '100%', alignSelf: 'center' }}>
+        <Text className="text-4xl mb-3">🧠</Text>
+        <Text className="font-nunito-extrabold text-xl text-text mb-3">Quiz Arena</Text>
+        <Button variant="primary" size="md" onPress={() => setGameState('hub')}>
+          Open Quests ➔
+        </Button>
+      </View>
+    </SafeAreaView>
+  );
 }
