@@ -15,7 +15,7 @@ import { useNotification } from '@/shared/components/ui/NotificationContext';
 import { sounds } from '@/shared/utils/soundEffects';
 import { colors } from '@/theme';
 
-// --- INTERACTIVE KID-FRIENDLY QUIZZES (Primary & Offline Source) ---
+// --- INTERACTIVE KID-FRIENDLY QUIZZES (Instant In-Memory Source) ---
 export const DEFAULT_QUIZZES: QuizDocument[] = [
   {
     id: 'quiz_1_nutrition',
@@ -234,7 +234,6 @@ export const DEFAULT_QUIZZES: QuizDocument[] = [
 function normalizeOption(opt: any): { text: string; visual: string; subtitle?: string; color: string } {
   if (typeof opt === 'string') {
     const parts = opt.trim().split(' ');
-    // If starts with an emoji e.g. "🍌 Banana"
     if (parts.length > 1 && /\p{Extended_Pictographic}/u.test(parts[0])) {
       return {
         visual: parts[0],
@@ -257,18 +256,25 @@ function normalizeOption(opt: any): { text: string; visual: string; subtitle?: s
 }
 
 export default function QuizScreen() {
-  const { quizId } = useLocalSearchParams();
+  const params = useLocalSearchParams<{ quizId?: string | string[] }>();
+  const quizIdParam = Array.isArray(params.quizId) ? params.quizId[0] : params.quizId;
+
   const router = useRouter();
   const { user, studentProfile, updateStudentProfile } = useAuthStore();
   const { showNotification } = useNotification();
 
+  // Instant in-memory state: zero-second initial render
   const [quizzesList, setQuizzesList] = useState<QuizDocument[]>(DEFAULT_QUIZZES);
-  const [activeQuiz, setActiveQuiz] = useState<QuizDocument | null>(null);
-  const [quizLoading, setQuizLoading] = useState(false);
-  const [listLoading, setListLoading] = useState(false);
+  const [activeQuiz, setActiveQuiz] = useState<QuizDocument | null>(() => {
+    if (!quizIdParam) return null;
+    return DEFAULT_QUIZZES.find((q) => q.id === quizIdParam || q.lessonId === quizIdParam) || DEFAULT_QUIZZES[0];
+  });
 
   // Gameplay State
-  const [gameState, setGameState] = useState<'hub' | 'start' | 'playing' | 'results'>('hub');
+  const [gameState, setGameState] = useState<'hub' | 'start' | 'playing' | 'results'>(() => {
+    return quizIdParam ? 'start' : 'hub';
+  });
+
   const [currentQuestionIdx, setCurrentQuestionIdx] = useState(0);
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
   const [isAnswerChecked, setIsAnswerChecked] = useState(false);
@@ -276,7 +282,7 @@ export default function QuizScreen() {
   const [correctAnswersCount, setCorrectAnswersCount] = useState(0);
   const [isSpeaking, setIsSpeaking] = useState(false);
 
-  // Stop speech when changing screens or questions
+  // Stop speech cleanly when changing screens or questions
   useEffect(() => {
     try {
       Speech.stop();
@@ -284,66 +290,67 @@ export default function QuizScreen() {
     setIsSpeaking(false);
   }, [currentQuestionIdx, gameState]);
 
-  // 1. Fetch quizzes for the Hub list
+  // Sync state when quizIdParam changes (Instant local lookup + non-blocking background sync)
   useEffect(() => {
-    async function fetchQuizzes() {
-      try {
-        setListLoading(true);
-        const quizzesCol = collection(db, 'quizzes');
-        const querySnap = await getDocs(quizzesCol);
-        const list: QuizDocument[] = [];
-        querySnap.forEach((docSnap) => {
-          list.push({ id: docSnap.id, ...docSnap.data() } as QuizDocument);
-        });
-        if (list.length > 0) {
-          setQuizzesList(list);
-        }
-      } catch (err) {
-        console.warn('Using built-in interactive quizzes:', err);
-      } finally {
-        setListLoading(false);
-      }
-    }
-    fetchQuizzes();
-  }, [quizId]);
-
-  // 2. Fetch specific quiz if quizId parameter changes
-  useEffect(() => {
-    if (!quizId) {
+    if (!quizIdParam) {
       setGameState('hub');
       setActiveQuiz(null);
       return;
     }
 
-    async function fetchSpecificQuiz() {
+    // 1. Immediately activate matching quiz from memory
+    const localMatch = DEFAULT_QUIZZES.find((q) => q.id === quizIdParam || q.lessonId === quizIdParam) || DEFAULT_QUIZZES[0];
+    setActiveQuiz(localMatch);
+    setGameState('start');
+
+    // 2. Non-blocking Firestore check with fast 1.5s timeout (never freezes the screen)
+    let isMounted = true;
+    const fetchRemoteQuiz = async () => {
       try {
-        setQuizLoading(true);
-        let foundQuiz: QuizDocument | null = null;
-        try {
-          const quizRef = doc(db, 'quizzes', quizId as string);
-          const quizSnap = await getDoc(quizRef);
-          if (quizSnap.exists()) {
-            foundQuiz = { id: quizSnap.id, ...quizSnap.data() } as QuizDocument;
-          }
-        } catch (e) {
-          console.warn('Firestore quiz fetch fallback:', e);
+        const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 1500));
+        const quizRef = doc(db, 'quizzes', quizIdParam);
+        const quizSnap: any = await Promise.race([getDoc(quizRef), timeoutPromise]);
+        if (isMounted && quizSnap && quizSnap.exists()) {
+          setActiveQuiz({ id: quizSnap.id, ...quizSnap.data() } as QuizDocument);
         }
-
-        if (!foundQuiz) {
-          foundQuiz = DEFAULT_QUIZZES.find((q) => q.id === quizId || q.lessonId === quizId) || DEFAULT_QUIZZES[0];
-        }
-
-        setActiveQuiz(foundQuiz);
-        setGameState('start');
-      } catch (err) {
-        console.error('Error loading quiz:', err);
-      } finally {
-        setQuizLoading(false);
+      } catch {
+        // Fallback already loaded seamlessly!
       }
-    }
+    };
 
-    fetchSpecificQuiz();
-  }, [quizId]);
+    fetchRemoteQuiz();
+    return () => {
+      isMounted = false;
+    };
+  }, [quizIdParam]);
+
+  // Non-blocking background sync of quizzes list for Hub
+  useEffect(() => {
+    let isMounted = true;
+    const syncQuizzesList = async () => {
+      try {
+        const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 1500));
+        const quizzesCol = collection(db, 'quizzes');
+        const querySnap: any = await Promise.race([getDocs(quizzesCol), timeoutPromise]);
+        if (isMounted && querySnap) {
+          const list: QuizDocument[] = [];
+          querySnap.forEach((docSnap: any) => {
+            list.push({ id: docSnap.id, ...docSnap.data() } as QuizDocument);
+          });
+          if (list.length > 0) {
+            setQuizzesList(list);
+          }
+        }
+      } catch {
+        // Uses built-in DEFAULT_QUIZZES
+      }
+    };
+
+    syncQuizzesList();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const speakCurrentQuestion = (q: QuizQuestion) => {
     try {
@@ -354,7 +361,7 @@ export default function QuizScreen() {
       }
       setIsSpeaking(true);
       const optionsText = (q.options || [])
-        .map((opt, i) => `Choice ${i + 1}: ${normalizeOption(opt).text}`)
+        .map((opt, i) => `Option ${i + 1}: ${normalizeOption(opt).text}`)
         .join('. ');
       const speechPrompt = `${q.soundPrompt || q.question}. ${optionsText}`;
 
@@ -371,35 +378,34 @@ export default function QuizScreen() {
     }
   };
 
-  const handleStartQuiz = async () => {
-    if (!activeQuiz || !studentProfile) return;
+  // Instant Start: Zero blocking spinners
+  const handleStartQuiz = () => {
+    if (!activeQuiz) return;
 
     // Energy check
     const cost = activeQuiz.energyCost || 10;
-    const currentEnergy = studentProfile.energy ?? 100;
+    const currentEnergy = studentProfile?.energy ?? 100;
 
     if (currentEnergy < cost) {
       alert(`⚡ Need Energy!\nYou need ${cost} energy to start this quiz. Complete daily habits on the dashboard to recharge!`);
       return;
     }
 
-    setQuizLoading(true);
-    try {
-      sounds.playTap();
-      await updateStudentProfile({
-        energy: Math.max(0, currentEnergy - cost),
-      });
+    sounds.playTap();
 
-      setCurrentQuestionIdx(0);
-      setSelectedOption(null);
-      setIsAnswerChecked(false);
-      setCorrectAnswersCount(0);
-      setGameState('playing');
-    } catch (err) {
-      console.error('Failed to deduct energy:', err);
-    } finally {
-      setQuizLoading(false);
+    // Background energy deduction
+    if (studentProfile && updateStudentProfile) {
+      updateStudentProfile({
+        energy: Math.max(0, currentEnergy - cost),
+      }).catch((err) => console.warn('Energy update fallback:', err));
     }
+
+    // Instantly launch question 1
+    setCurrentQuestionIdx(0);
+    setSelectedOption(null);
+    setIsAnswerChecked(false);
+    setCorrectAnswersCount(0);
+    setGameState('playing');
   };
 
   // Immediate 1-tap feedback when a child taps an answer card
@@ -438,37 +444,16 @@ export default function QuizScreen() {
   };
 
   const handleFinishQuiz = async () => {
-    if (!activeQuiz || !user || !studentProfile) return;
+    if (!activeQuiz) return;
 
-    try {
-      const totalQuestions = activeQuiz.questions.length;
-      const scorePercentage = Math.round((correctAnswersCount / totalQuestions) * 100);
-      const isPassed = scorePercentage >= 60;
+    const totalQuestions = activeQuiz.questions.length;
+    const scorePercentage = Math.round((correctAnswersCount / totalQuestions) * 100);
+    const isPassed = scorePercentage >= 60;
 
-      const attemptId = `${user.uid}_${activeQuiz.id}`;
-      const attemptRef = doc(db, 'quizAttempts', attemptId);
-
-      // Save attempt log
-      try {
-        await setDoc(
-          attemptRef,
-          {
-            userId: user.uid,
-            quizId: activeQuiz.id,
-            score: correctAnswersCount,
-            totalQuestions,
-            passed: isPassed,
-            attemptedAt: serverTimestamp(),
-          },
-          { merge: true }
-        );
-      } catch (err) {
-        console.warn('Quiz attempt offline save fallback:', err);
-      }
-
-      // Award prizes if passed
-      if (isPassed) {
-        sounds.playVictoryFanfare();
+    // Award prizes if passed
+    if (isPassed) {
+      sounds.playVictoryFanfare();
+      if (studentProfile && updateStudentProfile) {
         const currentXP = studentProfile.totalXP || 0;
         const currentCoins = studentProfile.coins || 0;
 
@@ -489,9 +474,11 @@ export default function QuizScreen() {
           profileUpdates.coins += 25;
         }
 
-        await updateStudentProfile(profileUpdates);
+        updateStudentProfile(profileUpdates).catch((err) => console.warn('Profile reward sync:', err));
+      }
 
-        // Award Energy Builder badge
+      // Achievement notifications
+      if (user) {
         checkAndAwardAchievement(user.uid, 'ach_first_quiz', (title, icon) => {
           showNotification({
             title: `🏆 Badge Unlocked: ${title}!`,
@@ -500,7 +487,6 @@ export default function QuizScreen() {
           });
         });
 
-        // Award Brainiac badge if 100%
         if (correctAnswersCount === totalQuestions) {
           checkAndAwardAchievement(user.uid, 'ach_perfect_quizzes', (title, icon) => {
             showNotification({
@@ -510,12 +496,25 @@ export default function QuizScreen() {
             });
           });
         }
-      }
 
-      setGameState('results');
-    } catch (err) {
-      console.error('Error logging quiz attempt:', err);
+        // Background attempt log
+        const attemptId = `${user.uid}_${activeQuiz.id}`;
+        setDoc(
+          doc(db, 'quizAttempts', attemptId),
+          {
+            userId: user.uid,
+            quizId: activeQuiz.id,
+            score: correctAnswersCount,
+            totalQuestions,
+            passed: isPassed,
+            attemptedAt: serverTimestamp(),
+          },
+          { merge: true }
+        ).catch(() => {});
+      }
     }
+
+    setGameState('results');
   };
 
   const handleResetQuiz = () => {
@@ -528,16 +527,6 @@ export default function QuizScreen() {
   };
 
   // --- RENDER VIEWS ---
-
-  // Loading Screen
-  if (quizLoading) {
-    return (
-      <View className="flex-1 bg-background justify-center items-center">
-        <ActivityIndicator size="large" color={colors.primary.DEFAULT} />
-        <Text className="font-nunito-extrabold text-lg text-text mt-3">Loading Quest... 🚀</Text>
-      </View>
-    );
-  }
 
   // View: Hub List
   if (gameState === 'hub') {
@@ -552,68 +541,57 @@ export default function QuizScreen() {
           </View>
 
           <ScrollView className="flex-1 px-4 pt-4" showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 24 }}>
-            {listLoading ? (
-              <ActivityIndicator size="large" color={colors.primary.DEFAULT} className="mt-8" />
-            ) : quizzesList.length === 0 ? (
-              <Card variant="default" className="p-6 bg-white border-2 border-slate-200 rounded-3xl mt-4 items-center">
-                <Text className="text-4xl mb-2">🎓</Text>
-                <Text className="font-nunito-bold text-text-secondary text-center">
-                  No Quizzes Available yet. Complete your first lesson!
-                </Text>
-              </Card>
-            ) : (
-              quizzesList.map((quiz) => (
-                <TouchableOpacity
-                  key={quiz.id}
-                  onPress={() => router.push({ pathname: '/(tabs)/quiz', params: { quizId: quiz.id } })}
-                  activeOpacity={0.8}
+            {quizzesList.map((quiz) => (
+              <TouchableOpacity
+                key={quiz.id}
+                onPress={() => router.push({ pathname: '/(tabs)/quiz', params: { quizId: quiz.id } })}
+                activeOpacity={0.8}
+              >
+                <Card
+                  variant="pressable"
+                  className="mb-4 bg-white border-2 border-slate-200 rounded-3xl p-4 shadow-sm"
+                  style={{ borderBottomWidth: 4 }}
                 >
-                  <Card
-                    variant="pressable"
-                    className="mb-4 bg-white border-2 border-slate-200 rounded-3xl p-4 shadow-sm"
-                    style={{ borderBottomWidth: 4 }}
-                  >
-                    <View className="flex-row items-center">
-                      <View className="w-14 h-14 rounded-2xl bg-amber-100 border-2 border-amber-300 items-center justify-center mr-3">
-                        <Text className="text-3xl">
-                          {quiz.id?.includes('nutrition')
-                            ? '🍎'
-                            : quiz.id?.includes('fitness')
-                            ? '🏃'
-                            : quiz.id?.includes('sleep')
-                            ? '💤'
-                            : '🧼'}
-                        </Text>
-                      </View>
+                  <View className="flex-row items-center">
+                    <View className="w-14 h-14 rounded-2xl bg-amber-100 border-2 border-amber-300 items-center justify-center mr-3">
+                      <Text className="text-3xl">
+                        {quiz.id?.includes('nutrition')
+                          ? '🍎'
+                          : quiz.id?.includes('fitness')
+                          ? '🏃'
+                          : quiz.id?.includes('sleep')
+                          ? '💤'
+                          : '🧼'}
+                      </Text>
+                    </View>
 
-                      <View className="flex-1">
-                        <View className="flex-row items-center justify-between mb-1">
-                          <Text className="font-nunito-extrabold text-base text-text flex-1 mr-2" numberOfLines={1}>
-                            {quiz.title}
-                          </Text>
-                          <View className="bg-blue-100 border border-blue-300 px-2 py-0.5 rounded-full">
-                            <Text className="font-nunito-extrabold text-[10px] text-blue-800">-{quiz.energyCost} ⚡</Text>
-                          </View>
+                    <View className="flex-1">
+                      <View className="flex-row items-center justify-between mb-1">
+                        <Text className="font-nunito-extrabold text-base text-text flex-1 mr-2" numberOfLines={1}>
+                          {quiz.title}
+                        </Text>
+                        <View className="bg-blue-100 border border-blue-300 px-2 py-0.5 rounded-full">
+                          <Text className="font-nunito-extrabold text-[10px] text-blue-800">-{quiz.energyCost} ⚡</Text>
                         </View>
-
-                        <Text className="font-nunito-bold text-xs text-slate-500">
-                          {quiz.questions?.length || 3} Picture Questions • +{quiz.rewardsXP} XP • +{quiz.rewardsCoins} 🪙
-                        </Text>
                       </View>
-                    </View>
 
-                    <View className="flex-row justify-between items-center mt-3 pt-3 border-t border-slate-100">
-                      <Text className="font-nunito-bold text-xs text-emerald-600">
-                        ⭐ Early Reader Friendly
-                      </Text>
-                      <Text className="font-nunito-extrabold text-xs text-amber-600">
-                        Start Quest ➔
+                      <Text className="font-nunito-bold text-xs text-slate-500">
+                        {quiz.questions?.length || 3} Picture Questions • +{quiz.rewardsXP} XP • +{quiz.rewardsCoins} 🪙
                       </Text>
                     </View>
-                  </Card>
-                </TouchableOpacity>
-              ))
-            )}
+                  </View>
+
+                  <View className="flex-row justify-between items-center mt-3 pt-3 border-t border-slate-100">
+                    <Text className="font-nunito-bold text-xs text-emerald-600">
+                      ⭐ Early Reader Friendly
+                    </Text>
+                    <Text className="font-nunito-extrabold text-xs text-amber-600">
+                      Start Quest ➔
+                    </Text>
+                  </View>
+                </Card>
+              </TouchableOpacity>
+            ))}
           </ScrollView>
         </View>
       </SafeAreaView>
