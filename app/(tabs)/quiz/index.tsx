@@ -3,21 +3,24 @@ import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator } from 'rea
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { collection, doc, getDoc, getDocs, setDoc, serverTimestamp } from 'firebase/firestore';
+import * as Speech from 'expo-speech';
 import { db } from '@/config/firebase';
 import { useAuthStore } from '@/features/auth/stores/authStore';
-import { QuizDocument, QuizQuestion } from '@/shared/types/database';
+import { QuizDocument, QuizQuestion, QuizOptionItem } from '@/shared/types/database';
 import { Card } from '@/shared/components/ui/Card';
 import { Button } from '@/shared/components/ui/Button';
 import { Avatar } from '@/shared/components/ui/Avatar';
 import { checkAndAwardAchievement } from '@/shared/utils/achievements';
 import { useNotification } from '@/shared/components/ui/NotificationContext';
+import { sounds } from '@/shared/utils/soundEffects';
 import { colors } from '@/theme';
 
+// --- INTERACTIVE KID-FRIENDLY QUIZZES (Primary & Offline Source) ---
 export const DEFAULT_QUIZZES: QuizDocument[] = [
   {
     id: 'quiz_1_nutrition',
     lessonId: 'lesson_1_nutrition',
-    title: 'Intro to Fruits Quiz 🧠',
+    title: 'Rainbow Fruit Explorer 🍎',
     energyCost: 10,
     rewardsXP: 25,
     rewardsCoins: 15,
@@ -25,26 +28,44 @@ export const DEFAULT_QUIZZES: QuizDocument[] = [
       {
         id: 'q1_1',
         type: 'mcq',
-        question: 'Which color fruit gives steady energy like a battery?',
-        options: ['Red', 'Yellow', 'Blue', 'Black'],
-        correctAnswer: 'Yellow',
-        explanation: 'Yellow fruits like bananas are packed with healthy carbohydrates that give your body steady, long-lasting energy!',
+        visual: '⚡',
+        question: 'Which fruit gives your body steady battery power?',
+        soundPrompt: 'Which fruit gives your body steady battery power?',
+        options: [
+          { text: 'Yellow Banana', visual: '🍌', subtitle: 'Steady energy!', color: '#FEF08A' },
+          { text: 'Sugary Lollipop', visual: '🍭', subtitle: 'Sugar crash!', color: '#FBCFE8' },
+          { text: 'Greasy Fries', visual: '🍟', subtitle: 'Heavy tummy!', color: '#FED7AA' },
+        ],
+        correctAnswer: 'Yellow Banana',
+        explanation: 'Woohoo! Bananas give you lasting energy like a full superhero battery! 🍌⚡',
       },
       {
         id: 'q1_2',
-        type: 'tf',
-        question: 'Red fruits like apples are great for protecting your lungs.',
-        options: ['True', 'False'],
-        correctAnswer: 'False',
-        explanation: 'Red fruits like strawberries and apples are excellent for keeping your HEART strong and healthy!',
+        type: 'mcq',
+        visual: '❤️',
+        question: 'What bright red fruit protects your happy heart?',
+        soundPrompt: 'What bright red fruit protects your happy heart?',
+        options: [
+          { text: 'Crunchy Red Apple', visual: '🍎', subtitle: 'Heart hero!', color: '#FECACA' },
+          { text: 'Blue Cupcake', visual: '🧁', subtitle: 'Sweet treat', color: '#BFDBFE' },
+          { text: 'Chocolate Bar', visual: '🍫', subtitle: 'Sticky candy', color: '#E2E8F0' },
+        ],
+        correctAnswer: 'Crunchy Red Apple',
+        explanation: 'Great job! Red apples and berries keep your heart beating strong and proud! ❤️🍎',
       },
       {
         id: 'q1_3',
-        type: 'scenario',
-        question: 'Max wants to help his brain remember facts for a school test tomorrow. Which fruit should he eat?',
-        options: ['Apples', 'Grapes', 'Lemons', 'Bananas'],
-        correctAnswer: 'Grapes',
-        explanation: 'Purple fruits like grapes and blueberries are rich in antioxidants that boost memory and help brain functions!',
+        type: 'mcq',
+        visual: '🧠',
+        question: 'Which juicy fruit helps your brain remember things?',
+        soundPrompt: 'Which juicy fruit helps your brain remember things?',
+        options: [
+          { text: 'Purple Grapes', visual: '🍇', subtitle: 'Brain booster!', color: '#DDD6FE' },
+          { text: 'Glazed Donut', visual: '🍩', subtitle: 'Sleepy brain', color: '#FCE7F3' },
+          { text: 'Fizzy Soda', visual: '🥤', subtitle: 'Sugar rush', color: '#CFFAFE' },
+        ],
+        correctAnswer: 'Purple Grapes',
+        explanation: 'Super brain power! Purple grapes and blueberries boost your memory for school! 🍇✨',
       },
     ],
     createdAt: new Date().toISOString(),
@@ -52,7 +73,7 @@ export const DEFAULT_QUIZZES: QuizDocument[] = [
   {
     id: 'quiz_2_fitness',
     lessonId: 'lesson_2_fitness',
-    title: 'Active Playing Quiz 🧠',
+    title: 'Super Mover Quest 🏃',
     energyCost: 10,
     rewardsXP: 30,
     rewardsCoins: 20,
@@ -60,18 +81,43 @@ export const DEFAULT_QUIZZES: QuizDocument[] = [
       {
         id: 'q2_1',
         type: 'tf',
-        question: 'Your heart is actually a muscle.',
-        options: ['True', 'False'],
-        correctAnswer: 'True',
-        explanation: 'Yes! Your heart is a very important muscle that gets stronger and healthier every time you run, play, and stay active!',
+        visual: '💓',
+        question: 'Your heart is a muscle that gets stronger when you play! Is this true?',
+        soundPrompt: 'Your heart is a muscle that gets stronger when you play! Is this true?',
+        options: [
+          { text: 'YES! True!', visual: '👍', subtitle: 'Strong heart muscle!', color: '#BBF7D0' },
+          { text: 'NO! False!', visual: '👎', subtitle: 'Not a muscle', color: '#FECDD3' },
+        ],
+        correctAnswer: 'YES! True!',
+        explanation: 'Yes! Your heart is a mighty muscle that loves when you run, jump, and dance! 💓🎉',
       },
       {
         id: 'q2_2',
         type: 'mcq',
-        question: 'How many minutes should kids play actively each day to stay healthy?',
-        options: ['5 minutes', '10 minutes', '30 minutes', '180 minutes'],
-        correctAnswer: '30 minutes',
-        explanation: 'Playing actively for at least 30 minutes keeps your heart pumping and makes your muscles and bones strong!',
+        visual: '⏰',
+        question: 'How much fun active play should kids get every single day?',
+        soundPrompt: 'How much fun active play should kids get every single day?',
+        options: [
+          { text: '30 Minutes or More', visual: '🏃‍♂️', subtitle: 'Happy & strong!', color: '#BAE6FD' },
+          { text: '1 Single Minute', visual: '🛋️', subtitle: 'Way too quick!', color: '#E2E8F0' },
+          { text: 'Zero Minutes', visual: '😴', subtitle: 'Couch potato!', color: '#FED7AA' },
+        ],
+        correctAnswer: '30 Minutes or More',
+        explanation: 'You got it! 30 minutes of running and jumping keeps your bones and heart healthy! 🌟',
+      },
+      {
+        id: 'q2_3',
+        type: 'mcq',
+        visual: '⚽',
+        question: 'Which fun activity builds super strong legs and muscles?',
+        soundPrompt: 'Which fun activity builds super strong legs and muscles?',
+        options: [
+          { text: 'Kicking a Ball Outside', visual: '⚽', subtitle: 'Active play!', color: '#BBF7D0' },
+          { text: 'Sitting on the Floor', visual: '🛋️', subtitle: 'Not moving', color: '#E2E8F0' },
+          { text: 'Napping on the Rug', visual: '😴', subtitle: 'Sleeping', color: '#FDE68A' },
+        ],
+        correctAnswer: 'Kicking a Ball Outside',
+        explanation: 'Goal! Playing soccer and chasing friends builds super athletic muscles! ⚽🔥',
       },
     ],
     createdAt: new Date().toISOString(),
@@ -79,7 +125,7 @@ export const DEFAULT_QUIZZES: QuizDocument[] = [
   {
     id: 'quiz_3_sleep',
     lessonId: 'lesson_3_sleep',
-    title: 'Power of Sleep Quiz 🧠',
+    title: 'Dreamland Hero Quiz 💤',
     energyCost: 10,
     rewardsXP: 25,
     rewardsCoins: 15,
@@ -87,18 +133,44 @@ export const DEFAULT_QUIZZES: QuizDocument[] = [
       {
         id: 'q3_1',
         type: 'mcq',
-        question: 'What should you do with tablet/phone screens 1 hour before bedtime?',
-        options: ['Play a game', 'Turn them off', 'Watch a video', 'Keep them under the pillow'],
-        correctAnswer: 'Turn them off',
-        explanation: 'Turning off screens 1 hour before bed helps your brain relax and tells your body it is time for restful sleep!',
+        visual: '📴',
+        question: 'What should we do with tablets and screens 1 hour before bedtime?',
+        soundPrompt: 'What should we do with tablets and screens 1 hour before bedtime?',
+        options: [
+          { text: 'Turn Them Off', visual: '📴', subtitle: 'Rest your eyes!', color: '#DDD6FE' },
+          { text: 'Play Loud Games', visual: '🎮', subtitle: 'Wakes brain up', color: '#FECDD3' },
+          { text: 'Hide Under Pillow', visual: '📱', subtitle: 'Sneaky screen', color: '#FDE68A' },
+        ],
+        correctAnswer: 'Turn Them Off',
+        explanation: 'Great choice! Turning off screens helps your eyes relax and readies your brain for sweet dreams! 🌙',
       },
       {
         id: 'q3_2',
-        type: 'tf',
-        question: 'Growing kids need about 9 to 11 hours of sleep every night.',
-        options: ['True', 'False'],
-        correctAnswer: 'True',
-        explanation: 'Yes! Growing kids need 9 to 11 hours of sleep to fully recharge their body and store new memories!',
+        type: 'mcq',
+        visual: '🌙',
+        question: 'How many hours of sleep do growing superheroes need each night?',
+        soundPrompt: 'How many hours of sleep do growing superheroes need each night?',
+        options: [
+          { text: '9 to 11 Hours', visual: '🛌', subtitle: 'Full battery charge!', color: '#C7D2FE' },
+          { text: '2 Short Hours', visual: '⚡', subtitle: 'Super sleepy!', color: '#FECDD3' },
+          { text: 'Zero Hours', visual: '🦉', subtitle: 'Night owl', color: '#E2E8F0' },
+        ],
+        correctAnswer: '9 to 11 Hours',
+        explanation: 'Yes! 9 to 11 hours gives your body the time it needs to grow taller and recharge! 😴⭐',
+      },
+      {
+        id: 'q3_3',
+        type: 'mcq',
+        visual: '🔋',
+        question: 'What happens to your body while you sleep peacefully?',
+        soundPrompt: 'What happens to your body while you sleep peacefully?',
+        options: [
+          { text: 'Recharges Battery!', visual: '🔋', subtitle: 'Grows & repairs!', color: '#BBF7D0' },
+          { text: 'Turns to Green Slime', visual: '🧪', subtitle: 'Silly monster!', color: '#BAE6FD' },
+          { text: 'Floats to the Moon', visual: '🎈', subtitle: 'Drifting off', color: '#FBCFE8' },
+        ],
+        correctAnswer: 'Recharges Battery!',
+        explanation: 'Hero recharge! Sleep repairs your tired muscles and organizes everything you learned! 🛌✨',
       },
     ],
     createdAt: new Date().toISOString(),
@@ -106,7 +178,7 @@ export const DEFAULT_QUIZZES: QuizDocument[] = [
   {
     id: 'quiz_4_hygiene',
     lessonId: 'lesson_4_hygiene',
-    title: 'Sparkling Teeth Quiz 🧠',
+    title: 'Sparkle Smile Hero 🧼',
     energyCost: 10,
     rewardsXP: 25,
     rewardsCoins: 15,
@@ -114,15 +186,75 @@ export const DEFAULT_QUIZZES: QuizDocument[] = [
       {
         id: 'q4_1',
         type: 'mcq',
-        question: 'How many minutes should you brush your teeth for to clean them properly?',
-        options: ['30 seconds', '1 minute', '2 minutes', '5 minutes'],
-        correctAnswer: '2 minutes',
-        explanation: 'Dentists recommend brushing for exactly 2 minutes to make sure you clean all parts of your teeth and get rid of cavity bugs!',
+        visual: '🪥',
+        question: 'How many minutes should you brush your teeth to scare cavity bugs away?',
+        soundPrompt: 'How many minutes should you brush your teeth to scare cavity bugs away?',
+        options: [
+          { text: '2 Full Minutes', visual: '⏳', subtitle: 'Sparkling clean!', color: '#A7F3D0' },
+          { text: '5 Quick Seconds', visual: '⚡', subtitle: 'Way too fast!', color: '#FECDD3' },
+          { text: 'Once a Month', visual: '🥱', subtitle: 'Germ city!', color: '#E2E8F0' },
+        ],
+        correctAnswer: '2 Full Minutes',
+        explanation: 'Hooray! 2 minutes with circular brush strokes keeps your teeth shining and cavity-free! 🪥✨',
+      },
+      {
+        id: 'q4_2',
+        type: 'mcq',
+        visual: '🧼',
+        question: 'What washes dirt and playground germs off your hands?',
+        soundPrompt: 'What washes dirt and playground germs off your hands?',
+        options: [
+          { text: 'Soap and Warm Water', visual: '🧼', subtitle: 'Bubbly clean!', color: '#BAE6FD' },
+          { text: 'Chocolate Pudding', visual: '🍫', subtitle: 'Sticky mess!', color: '#FED7AA' },
+          { text: 'Wiping on your Pants', visual: '👖', subtitle: 'Germs stay!', color: '#E2E8F0' },
+        ],
+        correctAnswer: 'Soap and Warm Water',
+        explanation: 'Bubbly clean! Soap and water chase all dirt and germs right down the drain! 🧼🫧',
+      },
+      {
+        id: 'q4_3',
+        type: 'mcq',
+        visual: '💧',
+        question: 'Which drink protects your teeth and gives you superpowers?',
+        soundPrompt: 'Which drink protects your teeth and gives you superpowers?',
+        options: [
+          { text: 'Fresh Cool Water', visual: '💧', subtitle: 'Best hydration!', color: '#BFDBFE' },
+          { text: 'Sticky Soda Pop', visual: '🥤', subtitle: 'Cavity monster!', color: '#FECDD3' },
+          { text: 'Sweet Candy Juice', visual: '🧃', subtitle: 'Lots of sugar', color: '#FED7AA' },
+        ],
+        correctAnswer: 'Fresh Cool Water',
+        explanation: 'Splendid! Cool water rinses food away and keeps tooth enamel super tough! 💧🦷',
       },
     ],
     createdAt: new Date().toISOString(),
   },
 ];
+
+// Helper to normalize options whether stored as string or QuizOptionItem
+function normalizeOption(opt: any): { text: string; visual: string; subtitle?: string; color: string } {
+  if (typeof opt === 'string') {
+    const parts = opt.trim().split(' ');
+    // If starts with an emoji e.g. "🍌 Banana"
+    if (parts.length > 1 && /\p{Extended_Pictographic}/u.test(parts[0])) {
+      return {
+        visual: parts[0],
+        text: parts.slice(1).join(' '),
+        color: '#EEF2FF',
+      };
+    }
+    return {
+      visual: '⭐',
+      text: opt,
+      color: '#F8FAFC',
+    };
+  }
+  return {
+    text: opt.text || '',
+    visual: opt.visual || '🌟',
+    subtitle: opt.subtitle,
+    color: opt.color || '#EEF2FF',
+  };
+}
 
 export default function QuizScreen() {
   const { quizId } = useLocalSearchParams();
@@ -142,23 +274,32 @@ export default function QuizScreen() {
   const [isAnswerChecked, setIsAnswerChecked] = useState(false);
   const [isCorrect, setIsCorrect] = useState(false);
   const [correctAnswersCount, setCorrectAnswersCount] = useState(0);
-  const [savingAttempt, setSavingAttempt] = useState(false);
+  const [isSpeaking, setIsSpeaking] = useState(false);
 
-  // 1. Fetch all quizzes for the Hub list
+  // Stop speech when changing screens or questions
+  useEffect(() => {
+    try {
+      Speech.stop();
+    } catch {}
+    setIsSpeaking(false);
+  }, [currentQuestionIdx, gameState]);
+
+  // 1. Fetch quizzes for the Hub list
   useEffect(() => {
     async function fetchQuizzes() {
       try {
+        setListLoading(true);
         const quizzesCol = collection(db, 'quizzes');
         const querySnap = await getDocs(quizzesCol);
         const list: QuizDocument[] = [];
-        querySnap.forEach((doc) => {
-          list.push({ id: doc.id, ...doc.data() } as QuizDocument);
+        querySnap.forEach((docSnap) => {
+          list.push({ id: docSnap.id, ...docSnap.data() } as QuizDocument);
         });
         if (list.length > 0) {
           setQuizzesList(list);
         }
       } catch (err) {
-        console.warn('Error fetching quizzes list, using default quizzes:', err);
+        console.warn('Using built-in interactive quizzes:', err);
       } finally {
         setListLoading(false);
       }
@@ -204,26 +345,51 @@ export default function QuizScreen() {
     fetchSpecificQuiz();
   }, [quizId]);
 
+  const speakCurrentQuestion = (q: QuizQuestion) => {
+    try {
+      if (isSpeaking) {
+        Speech.stop();
+        setIsSpeaking(false);
+        return;
+      }
+      setIsSpeaking(true);
+      const optionsText = (q.options || [])
+        .map((opt, i) => `Choice ${i + 1}: ${normalizeOption(opt).text}`)
+        .join('. ');
+      const speechPrompt = `${q.soundPrompt || q.question}. ${optionsText}`;
+
+      Speech.speak(speechPrompt, {
+        language: 'en-US',
+        pitch: 1.15,
+        rate: 0.86,
+        onDone: () => setIsSpeaking(false),
+        onStopped: () => setIsSpeaking(false),
+        onError: () => setIsSpeaking(false),
+      });
+    } catch {
+      setIsSpeaking(false);
+    }
+  };
+
   const handleStartQuiz = async () => {
     if (!activeQuiz || !studentProfile) return;
 
     // Energy check
     const cost = activeQuiz.energyCost || 10;
-    const currentEnergy = studentProfile.energy || 100;
+    const currentEnergy = studentProfile.energy ?? 100;
 
     if (currentEnergy < cost) {
-      alert(`⚠️ Not enough energy! You need at least ${cost} energy to start this quiz. Complete daily challenges to recharge!`);
+      alert(`⚡ Need Energy!\nYou need ${cost} energy to start this quiz. Complete daily habits on the dashboard to recharge!`);
       return;
     }
 
     setQuizLoading(true);
     try {
-      // Deduct energy
+      sounds.playTap();
       await updateStudentProfile({
         energy: Math.max(0, currentEnergy - cost),
       });
 
-      // Start gameplay loop
       setCurrentQuestionIdx(0);
       setSelectedOption(null);
       setIsAnswerChecked(false);
@@ -236,29 +402,37 @@ export default function QuizScreen() {
     }
   };
 
-  const handleCheckAnswer = () => {
-    if (!activeQuiz || selectedOption === null) return;
+  // Immediate 1-tap feedback when a child taps an answer card
+  const handleSelectOption = (optItem: ReturnType<typeof normalizeOption>) => {
+    if (isAnswerChecked || !activeQuiz) return;
 
+    setSelectedOption(optItem.text);
     const currentQuestion = activeQuiz.questions[currentQuestionIdx];
-    const isAnsCorrect = selectedOption === currentQuestion.correctAnswer;
 
-    setIsCorrect(isAnsCorrect);
+    const answerMatches =
+      optItem.text.toLowerCase().trim() === currentQuestion.correctAnswer.toLowerCase().trim() ||
+      normalizeOption(currentQuestion.correctAnswer).text.toLowerCase().trim() === optItem.text.toLowerCase().trim();
+
+    setIsCorrect(answerMatches);
     setIsAnswerChecked(true);
 
-    if (isAnsCorrect) {
+    if (answerMatches) {
+      sounds.playSuccessChime();
       setCorrectAnswersCount((prev) => prev + 1);
+    } else {
+      sounds.playTryAgainChime();
     }
   };
 
   const handleNextQuestion = () => {
     if (!activeQuiz) return;
+    sounds.playTap();
 
     if (currentQuestionIdx + 1 < activeQuiz.questions.length) {
       setCurrentQuestionIdx((prev) => prev + 1);
       setSelectedOption(null);
       setIsAnswerChecked(false);
     } else {
-      // Finished all questions → Transition to results
       handleFinishQuiz();
     }
   };
@@ -266,7 +440,6 @@ export default function QuizScreen() {
   const handleFinishQuiz = async () => {
     if (!activeQuiz || !user || !studentProfile) return;
 
-    setSavingAttempt(true);
     try {
       const totalQuestions = activeQuiz.questions.length;
       const scorePercentage = Math.round((correctAnswersCount / totalQuestions) * 100);
@@ -276,24 +449,32 @@ export default function QuizScreen() {
       const attemptRef = doc(db, 'quizAttempts', attemptId);
 
       // Save attempt log
-      await setDoc(attemptRef, {
-        userId: user.uid,
-        quizId: activeQuiz.id,
-        score: correctAnswersCount,
-        totalQuestions,
-        passed: isPassed,
-        attemptedAt: serverTimestamp(),
-      });
+      try {
+        await setDoc(
+          attemptRef,
+          {
+            userId: user.uid,
+            quizId: activeQuiz.id,
+            score: correctAnswersCount,
+            totalQuestions,
+            passed: isPassed,
+            attemptedAt: serverTimestamp(),
+          },
+          { merge: true }
+        );
+      } catch (err) {
+        console.warn('Quiz attempt offline save fallback:', err);
+      }
 
       // Award prizes if passed
       if (isPassed) {
+        sounds.playVictoryFanfare();
         const currentXP = studentProfile.totalXP || 0;
         const currentCoins = studentProfile.coins || 0;
-        
+
         const rewardXP = activeQuiz.rewardsXP || 25;
         const rewardCoins = activeQuiz.rewardsCoins || 15;
 
-        // Calculate Level Up
         const nextLevel = Math.floor((currentXP + rewardXP) / 100) + 1;
         const currentLevel = studentProfile.level || 1;
         const didLevelUp = nextLevel > currentLevel;
@@ -305,26 +486,26 @@ export default function QuizScreen() {
 
         if (didLevelUp) {
           profileUpdates.level = nextLevel;
-          profileUpdates.coins += 25; // Bonus level up coins
+          profileUpdates.coins += 25;
         }
 
         await updateStudentProfile(profileUpdates);
 
-        // Award Energy Builder achievement (first quiz completed)
+        // Award Energy Builder badge
         checkAndAwardAchievement(user.uid, 'ach_first_quiz', (title, icon) => {
           showNotification({
-            title: `🏆 Achievement Unlocked: ${title}!`,
-            message: `You earned the ${icon} badge for passing your first quiz!`,
+            title: `🏆 Badge Unlocked: ${title}!`,
+            message: `You earned the ${icon} badge for passing your quiz!`,
             type: 'achievement',
           });
         });
 
-        // Award Brainiac achievement if score is 100%
+        // Award Brainiac badge if 100%
         if (correctAnswersCount === totalQuestions) {
           checkAndAwardAchievement(user.uid, 'ach_perfect_quizzes', (title, icon) => {
             showNotification({
-              title: `🏆 Achievement Unlocked: ${title}!`,
-              message: `You earned the ${icon} badge for scoring 100% on a quiz!`,
+              title: `🌟 Perfect Score: ${title}!`,
+              message: `You earned the ${icon} badge for getting all questions right!`,
               type: 'achievement',
             });
           });
@@ -334,12 +515,11 @@ export default function QuizScreen() {
       setGameState('results');
     } catch (err) {
       console.error('Error logging quiz attempt:', err);
-    } finally {
-      setSavingAttempt(false);
     }
   };
 
   const handleResetQuiz = () => {
+    sounds.playTap();
     setSelectedOption(null);
     setIsAnswerChecked(false);
     setCorrectAnswersCount(0);
@@ -354,12 +534,12 @@ export default function QuizScreen() {
     return (
       <View className="flex-1 bg-background justify-center items-center">
         <ActivityIndicator size="large" color={colors.primary.DEFAULT} />
-        <Text className="font-nunito-bold text-text-secondary mt-3">Loading Quiz...</Text>
+        <Text className="font-nunito-extrabold text-lg text-text mt-3">Loading Quest... 🚀</Text>
       </View>
     );
   }
 
-  // View: Hub List (when no specific quizId is loaded)
+  // View: Hub List
   if (gameState === 'hub') {
     return (
       <SafeAreaView className="flex-1 bg-background" edges={['top']} style={{ backgroundColor: '#F8F9FF' }}>
@@ -367,7 +547,7 @@ export default function QuizScreen() {
           <View className="px-5 py-4 border-b-2 border-slate-200 bg-white">
             <Text className="font-nunito-extrabold text-2xl text-text">🧠 Quiz Arena</Text>
             <Text className="font-nunito-bold text-xs text-text-secondary mt-0.5">
-              Complete lessons to unlock trivia challenges!
+              Fun picture trivia quests to test your health superpowers!
             </Text>
           </View>
 
@@ -388,27 +568,48 @@ export default function QuizScreen() {
                   onPress={() => router.push({ pathname: '/(tabs)/quiz', params: { quizId: quiz.id } })}
                   activeOpacity={0.8}
                 >
-                  <Card 
-                    variant="pressable" 
-                    className="mb-4 bg-white border-2 border-slate-200 rounded-3xl p-5 shadow-sm"
+                  <Card
+                    variant="pressable"
+                    className="mb-4 bg-white border-2 border-slate-200 rounded-3xl p-4 shadow-sm"
                     style={{ borderBottomWidth: 4 }}
                   >
-                    <View className="flex-row justify-between items-start mb-2">
-                      <Text className="font-nunito-extrabold text-base text-text flex-1 mr-2">
-                        {quiz.title}
-                      </Text>
-                      <View className="bg-blue-100 border border-blue-300 px-2.5 py-0.5 rounded-full">
-                        <Text className="font-nunito-extrabold text-[10px] text-blue-800">-{quiz.energyCost} ⚡</Text>
+                    <View className="flex-row items-center">
+                      <View className="w-14 h-14 rounded-2xl bg-amber-100 border-2 border-amber-300 items-center justify-center mr-3">
+                        <Text className="text-3xl">
+                          {quiz.id?.includes('nutrition')
+                            ? '🍎'
+                            : quiz.id?.includes('fitness')
+                            ? '🏃'
+                            : quiz.id?.includes('sleep')
+                            ? '💤'
+                            : '🧼'}
+                        </Text>
+                      </View>
+
+                      <View className="flex-1">
+                        <View className="flex-row items-center justify-between mb-1">
+                          <Text className="font-nunito-extrabold text-base text-text flex-1 mr-2" numberOfLines={1}>
+                            {quiz.title}
+                          </Text>
+                          <View className="bg-blue-100 border border-blue-300 px-2 py-0.5 rounded-full">
+                            <Text className="font-nunito-extrabold text-[10px] text-blue-800">-{quiz.energyCost} ⚡</Text>
+                          </View>
+                        </View>
+
+                        <Text className="font-nunito-bold text-xs text-slate-500">
+                          {quiz.questions?.length || 3} Picture Questions • +{quiz.rewardsXP} XP • +{quiz.rewardsCoins} 🪙
+                        </Text>
                       </View>
                     </View>
 
-                    <Text className="font-nunito-semibold text-xs text-slate-500">
-                      XP Reward: +{quiz.rewardsXP} XP • Coins: +{quiz.rewardsCoins} 🪙
-                    </Text>
-                    
-                    <Text className="font-nunito-extrabold text-xs text-amber-600 mt-3 self-end">
-                      Start Quiz ➔
-                    </Text>
+                    <View className="flex-row justify-between items-center mt-3 pt-3 border-t border-slate-100">
+                      <Text className="font-nunito-bold text-xs text-emerald-600">
+                        ⭐ Early Reader Friendly
+                      </Text>
+                      <Text className="font-nunito-extrabold text-xs text-amber-600">
+                        Start Quest ➔
+                      </Text>
+                    </View>
                   </Card>
                 </TouchableOpacity>
               ))
@@ -425,49 +626,68 @@ export default function QuizScreen() {
       <SafeAreaView className="flex-1 bg-background" edges={['top']} style={{ backgroundColor: '#F8F9FF' }}>
         <View className="flex-1 px-4 py-5 justify-between" style={{ maxWidth: 540, width: '100%', alignSelf: 'center' }}>
           <View>
-            <TouchableOpacity onPress={() => router.replace('/(tabs)/quiz')} className="self-start px-3.5 py-1.5 bg-slate-100 border border-slate-300 rounded-full mb-4">
+            <TouchableOpacity
+              onPress={() => router.replace('/(tabs)/quiz')}
+              className="self-start px-3.5 py-1.5 bg-slate-100 border border-slate-300 rounded-full mb-4"
+            >
               <Text className="font-nunito-bold text-xs text-text">◀ Arena Hub</Text>
             </TouchableOpacity>
 
-            <Text className="font-nunito-extrabold text-2xl text-text mb-1">
-              {activeQuiz.title}
-            </Text>
-            <Text className="font-nunito-semibold text-xs text-text-secondary mb-5">
-              Prove your health knowledge and win gold coins!
-            </Text>
+            <View className="items-center my-2">
+              <View className="w-20 h-20 rounded-full bg-amber-100 border-4 border-amber-300 items-center justify-center mb-3 shadow-sm">
+                <Text className="text-4xl">
+                  {activeQuiz.id?.includes('nutrition')
+                    ? '🍎'
+                    : activeQuiz.id?.includes('fitness')
+                    ? '🏃'
+                    : activeQuiz.id?.includes('sleep')
+                    ? '💤'
+                    : '🧼'}
+                </Text>
+              </View>
 
-            <Card variant="default" className="p-5 bg-white border-2 border-slate-200 rounded-3xl mb-5 shadow-sm" style={{ borderBottomWidth: 4 }}>
-              <Text className="font-nunito-extrabold text-sm text-text mb-3">Quest Details</Text>
-              
-              <View className="flex-row justify-between border-b border-slate-100 pb-2.5 mb-2.5">
-                <Text className="font-nunito-bold text-xs text-text-secondary">⚡ Energy Cost</Text>
+              <Text className="font-nunito-extrabold text-2xl text-text text-center mb-1">
+                {activeQuiz.title}
+              </Text>
+              <Text className="font-nunito-bold text-xs text-slate-500 text-center mb-4">
+                Tap large pictures, listen to audio, and win treasure!
+              </Text>
+            </View>
+
+            <Card variant="default" className="p-4 bg-white border-2 border-slate-200 rounded-3xl mb-4 shadow-sm" style={{ borderBottomWidth: 4 }}>
+              <Text className="font-nunito-extrabold text-sm text-text mb-3">Quest Rewards & Rules</Text>
+
+              <View className="flex-row justify-between border-b border-slate-100 pb-2 mb-2">
+                <Text className="font-nunito-bold text-xs text-slate-500">⚡ Energy to Play</Text>
                 <Text className="font-nunito-extrabold text-xs text-blue-600">-{activeQuiz.energyCost} Energy</Text>
               </View>
-              
-              <View className="flex-row justify-between border-b border-slate-100 pb-2.5 mb-2.5">
-                <Text className="font-nunito-bold text-xs text-text-secondary">🏆 XP Reward</Text>
+
+              <View className="flex-row justify-between border-b border-slate-100 pb-2 mb-2">
+                <Text className="font-nunito-bold text-xs text-slate-500">🏆 XP Reward</Text>
                 <Text className="font-nunito-extrabold text-xs text-emerald-600">+{activeQuiz.rewardsXP} XP</Text>
               </View>
 
               <View className="flex-row justify-between">
-                <Text className="font-nunito-bold text-xs text-text-secondary">🪙 Coin Reward</Text>
+                <Text className="font-nunito-bold text-xs text-slate-500">🪙 Gold Coins</Text>
                 <Text className="font-nunito-extrabold text-xs text-yellow-600">+{activeQuiz.rewardsCoins} Coins</Text>
               </View>
             </Card>
 
             <View className="flex-row items-center p-3.5 bg-indigo-50 border-2 border-indigo-200 rounded-3xl mb-4 shadow-xs" style={{ borderBottomWidth: 3 }}>
               <View className="w-14 h-14 rounded-full bg-white border border-indigo-300 items-center justify-center overflow-hidden mr-3">
-                <Avatar config={studentProfile?.avatar || {} as any} size={48} />
+                <Avatar config={studentProfile?.avatar || ({} as any)} size={48} />
               </View>
               <View className="flex-1 bg-white border border-indigo-100 p-2.5 rounded-2xl">
-                <Text className="font-nunito-bold text-xs text-slate-700">
-                  "Ready to put your brain to work? Let's crush this quiz!"
+                <Text className="font-nunito-bold text-xs text-slate-700 leading-4">
+                  "Ready to play, <Text className="font-nunito-extrabold text-primary">{studentProfile?.nickname || 'Hero'}</Text>? Tap the pictures and let's win stars!"
                 </Text>
               </View>
             </View>
           </View>
 
-          <Button variant="primary" size="lg" onPress={handleStartQuiz}>Start Quest! ➔</Button>
+          <Button variant="primary" size="lg" onPress={handleStartQuiz}>
+            Start Quest! ➔
+          </Button>
         </View>
       </SafeAreaView>
     );
@@ -478,108 +698,169 @@ export default function QuizScreen() {
     const questions = activeQuiz.questions;
     const currentQuestion = questions[currentQuestionIdx];
     const totalQuestions = questions.length;
-    const progressPercent = ((currentQuestionIdx + 1) / totalQuestions) * 100;
 
     return (
       <SafeAreaView className="flex-1 bg-background" edges={['top']} style={{ backgroundColor: '#F8F9FF' }}>
-        <View className="flex-1 px-4 py-4 justify-between" style={{ maxWidth: 540, width: '100%', alignSelf: 'center' }}>
+        <View className="flex-1 px-4 py-3 justify-between" style={{ maxWidth: 540, width: '100%', alignSelf: 'center' }}>
           
-          {/* Header Progress Indicators */}
-          <View className="mb-3">
-            <View className="flex-row justify-between items-center mb-1.5">
-              <Text className="font-nunito-extrabold text-xs text-slate-500">
-                Question {currentQuestionIdx + 1} of {totalQuestions}
-              </Text>
-              <Text className="font-nunito-extrabold text-xs text-emerald-600">
-                Score: {correctAnswersCount} correct
-              </Text>
+          {/* Header Progress & Audio Bar */}
+          <View className="mb-2">
+            <View className="flex-row justify-between items-center mb-2">
+              {/* Star Milestone Indicators */}
+              <View className="flex-row items-center space-x-1">
+                {questions.map((_, i) => (
+                  <Text key={i} className="text-xl">
+                    {i < currentQuestionIdx
+                      ? '⭐'
+                      : i === currentQuestionIdx
+                      ? '🌟'
+                      : '⚪'}
+                  </Text>
+                ))}
+                <Text className="font-nunito-extrabold text-xs text-slate-600 ml-2">
+                  Question {currentQuestionIdx + 1} of {totalQuestions}
+                </Text>
+              </View>
+
+              {/* Audio / Read to Me Button */}
+              <TouchableOpacity
+                onPress={() => speakCurrentQuestion(currentQuestion)}
+                activeOpacity={0.7}
+                className="flex-row items-center px-3 py-1.5 rounded-full border-2"
+                style={{
+                  backgroundColor: isSpeaking ? '#FEF3C7' : '#EFF6FF',
+                  borderColor: isSpeaking ? '#F59E0B' : '#93C5FD',
+                }}
+              >
+                <Text className="text-sm mr-1">{isSpeaking ? '🛑' : '🔊'}</Text>
+                <Text className="font-nunito-extrabold text-xs text-slate-700">
+                  {isSpeaking ? 'Stop' : 'Read to Me'}
+                </Text>
+              </TouchableOpacity>
             </View>
-            <View className="h-2.5 bg-slate-100 border border-slate-200 rounded-full overflow-hidden">
-              <View 
-                className="h-full bg-emerald-500 rounded-full" 
-                style={{ width: `${progressPercent}%`, backgroundColor: '#10B981' }} 
+
+            {/* Progress Track */}
+            <View className="h-2.5 bg-slate-200 rounded-full overflow-hidden">
+              <View
+                className="h-full bg-emerald-500 rounded-full"
+                style={{ width: `${((currentQuestionIdx + 1) / totalQuestions) * 100}%` }}
               />
             </View>
           </View>
 
-          {/* Question Text */}
-          <ScrollView className="flex-1 mb-3" showsVerticalScrollIndicator={false}>
-            <Card variant="default" className="p-4 bg-white border-2 border-slate-200 rounded-3xl mb-4 shadow-sm" style={{ borderBottomWidth: 4 }}>
-              {currentQuestion.type === 'scenario' && (
-                <Text className="font-nunito-extrabold text-[10px] text-indigo-600 mb-1.5 uppercase tracking-wider">
-                  📖 Story Scenario
-                </Text>
+          {/* Question Text & Illustration */}
+          <ScrollView className="flex-1 mb-2" showsVerticalScrollIndicator={false}>
+            <Card
+              variant="default"
+              className="p-4 bg-white border-2 border-slate-200 rounded-3xl mb-3 shadow-sm items-center"
+              style={{ borderBottomWidth: 4 }}
+            >
+              {currentQuestion.visual && (
+                <View className="w-14 h-14 rounded-2xl bg-amber-50 border-2 border-amber-200 items-center justify-center mb-2">
+                  <Text className="text-3xl">{currentQuestion.visual}</Text>
+                </View>
               )}
-              <Text className="font-nunito-extrabold text-base text-text">
+              <Text className="font-nunito-extrabold text-lg text-text text-center leading-6">
                 {currentQuestion.question}
               </Text>
             </Card>
 
-            {/* Selection Grid / Options */}
+            {/* Illustrated Picture Choices */}
             <View className="gap-2.5">
-              {currentQuestion.options.map((opt) => {
-                const isSelected = selectedOption === opt;
-                
-                // Styling when answer is checked
-                let optionBg = '#FFF';
-                let optionBorder = '#CBD5E1';
-                let optionBorderWidth = isSelected ? 4 : 2;
+              {(currentQuestion.options || []).map((rawOpt) => {
+                const opt = normalizeOption(rawOpt);
+                const isSelected = selectedOption === opt.text;
+
+                // Border & color styling for feedback
+                let cardBg = opt.color;
+                let cardBorder = '#CBD5E1';
+                let borderThickness = 4;
+
+                const isThisTheCorrectAnswer =
+                  opt.text.toLowerCase().trim() === currentQuestion.correctAnswer.toLowerCase().trim() ||
+                  normalizeOption(currentQuestion.correctAnswer).text.toLowerCase().trim() === opt.text.toLowerCase().trim();
 
                 if (isAnswerChecked) {
-                  if (opt === currentQuestion.correctAnswer) {
-                    optionBg = '#ECFDF5'; // Light green
-                    optionBorder = '#10B981'; // Green border
-                    optionBorderWidth = 4;
+                  if (isThisTheCorrectAnswer) {
+                    cardBg = '#DCFCE7'; // Cheerful green
+                    cardBorder = '#10B981';
                   } else if (isSelected) {
-                    optionBg = '#FEF2F2'; // Light red
-                    optionBorder = '#EF4444'; // Red border
-                    optionBorderWidth = 4;
+                    cardBg = '#FEE2E2'; // Soft coral
+                    cardBorder = '#EF4444';
+                  } else {
+                    cardBg = '#F8FAFC';
+                    cardBorder = '#E2E8F0';
                   }
                 } else if (isSelected) {
-                  optionBg = '#EEF2FF';
-                  optionBorder = '#4F46E5';
+                  cardBorder = '#4F46E5';
                 }
 
                 return (
                   <TouchableOpacity
-                    key={opt}
-                    onPress={() => {
-                      if (!isAnswerChecked) {
-                        setSelectedOption(opt);
-                      }
-                    }}
-                    activeOpacity={0.8}
+                    key={opt.text}
+                    onPress={() => handleSelectOption(opt)}
+                    activeOpacity={0.75}
                     disabled={isAnswerChecked}
                     style={{
-                      backgroundColor: optionBg,
-                      borderColor: optionBorder,
-                      borderWidth: 2,
-                      borderBottomWidth: optionBorderWidth,
+                      backgroundColor: cardBg,
+                      borderColor: cardBorder,
+                      borderWidth: 2.5,
+                      borderBottomWidth: borderThickness,
+                      minHeight: 82,
                     }}
-                    className="p-4 rounded-2xl shadow-xs"
+                    className="p-3.5 rounded-2xl flex-row items-center shadow-xs"
                   >
-                    <Text className={`font-nunito-extrabold text-sm text-text`}>
-                      {opt} {isSelected && !isAnswerChecked ? '✓' : ''}
-                    </Text>
+                    {/* Big picture / emoji badge */}
+                    <View className="w-14 h-14 rounded-2xl bg-white border-2 border-slate-200 items-center justify-center mr-3.5 shadow-xs">
+                      <Text className="text-3xl">{opt.visual}</Text>
+                    </View>
+
+                    {/* Option Text & Subtitle */}
+                    <View className="flex-1 mr-2">
+                      <Text className="font-nunito-extrabold text-base text-text">
+                        {opt.text}
+                      </Text>
+                      {opt.subtitle && (
+                        <Text className="font-nunito-bold text-xs text-slate-500 mt-0.5">
+                          {opt.subtitle}
+                        </Text>
+                      )}
+                    </View>
+
+                    {/* Feedback Icons */}
+                    {isAnswerChecked && isThisTheCorrectAnswer && (
+                      <View className="w-8 h-8 rounded-full bg-emerald-500 items-center justify-center">
+                        <Text className="text-white font-nunito-extrabold text-sm">✓</Text>
+                      </View>
+                    )}
+                    {isAnswerChecked && isSelected && !isThisTheCorrectAnswer && (
+                      <View className="w-8 h-8 rounded-full bg-red-500 items-center justify-center">
+                        <Text className="text-white font-nunito-extrabold text-sm">✗</Text>
+                      </View>
+                    )}
                   </TouchableOpacity>
                 );
               })}
             </View>
 
-            {/* Explanation card after checked */}
+            {/* Immediate Encouraging Feedback Banner */}
             {isAnswerChecked && (
-              <Card 
-                variant="default" 
-                className="p-3.5 mt-4 rounded-2xl border-2 shadow-xs"
-                style={{ 
-                  backgroundColor: isCorrect ? '#ECFDF5' : '#FEF2F2',
-                  borderColor: isCorrect ? '#10B981' : '#EF4444' 
+              <Card
+                variant="default"
+                className="p-3.5 mt-3 rounded-2xl border-2 shadow-xs"
+                style={{
+                  backgroundColor: isCorrect ? '#F0FDF4' : '#FFF7ED',
+                  borderColor: isCorrect ? '#10B981' : '#F97316',
+                  borderBottomWidth: 3,
                 }}
               >
-                <Text className={`font-nunito-extrabold text-xs mb-1 ${isCorrect ? 'text-emerald-800' : 'text-red-800'}`}>
-                  {isCorrect ? '🎉 Correct!' : '❌ Incorrect'}
-                </Text>
-                <Text className="font-nunito-bold text-xs text-slate-600 leading-4">
+                <View className="flex-row items-center mb-1">
+                  <Text className="text-xl mr-2">{isCorrect ? '🌟' : '💡'}</Text>
+                  <Text className={`font-nunito-extrabold text-sm ${isCorrect ? 'text-emerald-800' : 'text-amber-800'}`}>
+                    {isCorrect ? 'SUPER JOB! YOU GOT IT!' : 'ALMOST! HERE IS A HELPFUL HINT:'}
+                  </Text>
+                </View>
+                <Text className="font-nunito-bold text-xs text-slate-700 leading-4">
                   {currentQuestion.explanation}
                 </Text>
               </Card>
@@ -587,29 +868,20 @@ export default function QuizScreen() {
           </ScrollView>
 
           {/* Action Footer */}
-          <View className="py-1">
-            {!isAnswerChecked ? (
-              <Button
-                variant="primary"
-                size="lg"
-                onPress={handleCheckAnswer}
-                disabled={selectedOption === null}
-              >Check Answer</Button>
-            ) : (
-              <Button
-                variant="primary"
-                size="lg"
-                onPress={handleNextQuestion}
-              >{currentQuestionIdx + 1 === totalQuestions ? 'Finish Quiz ➔' : 'Next Question ➔'}</Button>
-            )}
-          </View>
+          {isAnswerChecked && (
+            <View className="py-1">
+              <Button variant="primary" size="lg" onPress={handleNextQuestion}>
+                {currentQuestionIdx + 1 === totalQuestions ? 'Finish Quest! 🏆' : 'Next Question ➔'}
+              </Button>
+            </View>
+          )}
 
         </View>
       </SafeAreaView>
     );
   }
 
-  // View: Quiz Results (Pass / Fail)
+  // View: Quiz Results
   if (gameState === 'results' && activeQuiz) {
     const totalQuestions = activeQuiz.questions.length;
     const scorePercentage = Math.round((correctAnswersCount / totalQuestions) * 100);
@@ -619,50 +891,66 @@ export default function QuizScreen() {
       <SafeAreaView className="flex-1 bg-background" edges={['top']} style={{ backgroundColor: '#F8F9FF' }}>
         <View className="flex-1 px-4 py-6 justify-between" style={{ maxWidth: 540, width: '100%', alignSelf: 'center' }}>
           <View className="items-center justify-center flex-1">
-            
             {passed ? (
               <>
-                <Text className="text-6xl mb-3">🏆</Text>
-                <Text className="font-nunito-extrabold text-2xl text-emerald-800 text-center">
-                  Quest Passed!
-                </Text>
-                <Text className="font-nunito-bold text-sm text-emerald-600 text-center mt-1">
-                  You got {correctAnswersCount} / {totalQuestions} correct ({scorePercentage}%)!
+                <Text className="text-6xl mb-2">🏆</Text>
+                <View className="flex-row items-center justify-center space-x-1 my-1">
+                  {Array.from({ length: totalQuestions }).map((_, i) => (
+                    <Text key={i} className="text-3xl">
+                      {i < correctAnswersCount ? '⭐' : '⚪'}
+                    </Text>
+                  ))}
+                </View>
+
+                <Text className="font-nunito-extrabold text-2xl text-emerald-800 text-center mt-1">
+                  {correctAnswersCount === totalQuestions ? 'Superstar Champion! 🌟' : 'Quest Passed! 🎉'}
                 </Text>
 
-                <Card variant="default" className="p-4 mt-5 bg-yellow-50 border-2 border-yellow-400 items-center rounded-3xl w-full shadow-sm" style={{ borderBottomWidth: 4 }}>
-                  <Text className="font-nunito-extrabold text-sm text-yellow-800 mb-1">🪙 Rewards Claimed 🪙</Text>
+                <Text className="font-nunito-bold text-sm text-emerald-600 text-center mt-1">
+                  You answered {correctAnswersCount} out of {totalQuestions} correctly!
+                </Text>
+
+                <Card
+                  variant="default"
+                  className="p-4 mt-4 bg-yellow-50 border-2 border-yellow-400 items-center rounded-3xl w-full shadow-sm"
+                  style={{ borderBottomWidth: 4 }}
+                >
+                  <Text className="font-nunito-extrabold text-sm text-yellow-800 mb-1">
+                    🪙 Treasure Claimed! 🪙
+                  </Text>
                   <Text className="font-nunito-bold text-xs text-yellow-700">
-                    +{activeQuiz.rewardsXP} XP & +{activeQuiz.rewardsCoins} Coins
+                    +{activeQuiz.rewardsXP} XP & +{activeQuiz.rewardsCoins} Coins added to your bank!
                   </Text>
                 </Card>
               </>
             ) : (
               <>
-                <Text className="text-6xl mb-3">💪</Text>
-                <Text className="font-nunito-extrabold text-2xl text-red-800 text-center">
-                  Keep Practicing!
+                <Text className="text-6xl mb-2">💪</Text>
+                <Text className="font-nunito-extrabold text-2xl text-amber-800 text-center">
+                  Nice Practice! 🌟
                 </Text>
-                <Text className="font-nunito-bold text-sm text-red-600 text-center mt-1">
-                  You got {correctAnswersCount} / {totalQuestions} correct ({scorePercentage}%).
+                <Text className="font-nunito-bold text-sm text-amber-600 text-center mt-1">
+                  You got {correctAnswersCount} out of {totalQuestions} correct.
                 </Text>
-                <Text className="font-nunito-medium text-xs text-slate-500 text-center mt-3 px-4 leading-4">
-                  Pass with 60% or higher to earn coins, XP, and unlock prizes. Re-read the lesson material and try again!
+                <Text className="font-nunito-bold text-xs text-slate-500 text-center mt-3 px-4 leading-4">
+                  Superheroes learn by trying! Re-read the short lesson and let's play again to earn full stars!
                 </Text>
               </>
             )}
           </View>
 
           <View className="gap-2.5 w-full">
-            {!passed ? (
-              <Button variant="primary" size="lg" onPress={handleResetQuiz}>Try Again</Button>
-            ) : null}
+            <Button variant="primary" size="lg" onPress={handleResetQuiz}>
+              Play Again 🔄
+            </Button>
 
-            <Button 
-              variant={passed ? "primary" : "outline"} 
-              size="lg" 
+            <Button
+              variant="outline"
+              size="lg"
               onPress={() => router.replace('/(tabs)/learn')}
-            >Back to Learn</Button>
+            >
+              Back to Learning Adventures 📚
+            </Button>
           </View>
         </View>
       </SafeAreaView>

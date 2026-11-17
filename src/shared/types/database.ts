@@ -83,13 +83,22 @@ export interface LessonProgressDocument {
   completedAt?: any; // Firestore Timestamp
 }
 
+export interface QuizOptionItem {
+  text: string;
+  visual: string; // Emoji or picture icon (e.g. 🍌, 🍎, 👍, 🪥)
+  subtitle?: string;
+  color?: string; // Pastel accent
+}
+
 export interface QuizQuestion {
   id: string;
   type: 'mcq' | 'tf' | 'scenario';
   question: string;
-  options?: string[]; // Empty for True/False
-  correctAnswer: string; // Index or text representation
+  options?: (string | QuizOptionItem)[];
+  correctAnswer: string; // Text representation matching option
   explanation: string;
+  visual?: string; // Header topic emoji/badge
+  soundPrompt?: string; // Custom read-aloud text
 }
 
 export interface QuizDocument {
@@ -135,6 +144,15 @@ export interface ChallengeProgressDocument {
   completed: boolean;
   date: string; // YYYY-MM-DD
   updatedAt: any; // Firestore Timestamp
+}
+
+export interface AchievementDocument {
+  id?: string;
+  title: string;
+  description: string;
+  icon: string;
+  badge?: string;
+  unlockedAt?: any;
 }
 
 export interface BadgeDocument {
